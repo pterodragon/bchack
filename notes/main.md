@@ -19,7 +19,7 @@
   - BTT service offered by Bittorrent the company
     - decentralized CDN for providers to advertise the bids and the data pieces
     - decentralized storage (requester can ask providers to store data there for a fee to the Bittorrent company)
-    - ecentralized proxy service for requesters to ask providers to download content by URL
+    - decentralized proxy service for requesters to ask providers to download content by URL
 - Implementation Considerations
   - Blockchain
     - to reduce fraud, all services should provide in increments
@@ -35,6 +35,7 @@
     - Bittorrent company, Tron foundation, public/private sales all got allocated some tokens
 - FAQ
   - Why not rewrite the BitTorrent protocol?
+- tags: cryptocurrency, bittorrent
 
 ## Avxchange
 https://medium.com/hackernoon/avxchange-a-distributed-peer-to-peer-p2p-file-sharing-platform-powered-by-blockchain-29a30d400e2a

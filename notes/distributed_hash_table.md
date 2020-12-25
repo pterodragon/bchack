@@ -1,0 +1,33 @@
+## Kademlia
+- node ID space = 160 bits
+- using XOR distance metric, each node stores a list ("k-bucket") of 160 `<IP addr, UDP port, node ID>` of nodes of a distance between [2^i, 2^(2+i) ), for i = 0, 1, ..., 159 [i.e. nodes of the same prefix of length i]
+  - Each k-bucket is sorted by last recently seen, size is up to k (parameter: assume any k nodes in the system don't fail within an hour of each other)
+- any node updates the k-buckets if received any request/message
+  - least recently seen node is evicted if it fails to respond and there's a new node
+- Protocol
+  - RPCs for a node
+    - `PING`: probes node to see if it's online
+    - `STORE`: instructs node to store `<key, value>` (value is distance?)
+    - `FIND_NODE(<160 bits ID>)`: return `<IP addr, UDP port, Node ID>` for the k nodes that the ID is closest to (may come from different k-buckets)
+      - idea: every query should give nodes that are "1 bit closer" -> O(log n) time search
+    - `FIND_VALUE(<160 bits ID>)`: same as `FIND_NODE` but will return the value from a `STORE` RPC if there's one
+- node lookup procedure
+  - 1. Initiator picks α nodes from its closest non-empty k-buckets and calls `FIND_NODE(x)` for all of them
+  - 2. repeatedly call `FIND_NODE(x)` using α of the returned nodes until k closest nodes are found (those nodes that say `x` is closest to them)
+- storing of a `<key, value>` pair can be done after k closest nodes to key is found and by sending `STORE(<key, value>)` RPC to those nodes
+  - for a node to stay alive, it's required to republish those `<key, value>` pairs every ? hours
+- to find a `<key, value>` pair
+  - use the node lookup procedure but use `FIND_VALUE(x)` instead of `FIND_NODE`; halts when a node returns a cached value
+- Refreshing of a bucket
+  - pick a random ID in the bucket's range and perform a lookup
+- Joining a network
+  - 1. For the joining node u, it must know a participating node w beforehand
+  - 2. u inserts w into the appropriate k-bucket
+  - 3. u performs lookup for its own ID
+  - 4. u refreshes all k-buckets (during so, u both populates its own k-buckets and inserts itself to other nodes' k-buckets)
+- more optimization/tricks in paper
+
+- Ref
+  - https://stackoverflow.com/questions/19329682/adding-new-nodes-to-kademlia-building-kademlia-routing-tables
+  - https://codethechange.stanford.edu/guides/guide_kademlia.html#walkthrough-of-a-kademlia-network-genesis
+    - very neatly explained!!
