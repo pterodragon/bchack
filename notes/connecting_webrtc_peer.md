@@ -15,5 +15,5 @@ Possible solutions are:
  - Decentralizing the signaling server. i.e. The signaling servers forms a DHT network, and the signaling will be propagated via the DHT until reaching the signal server that the another peer connected. Another benefit of this is that a signal server accessible by both peers is not needed.
 
 ### References:
-[1]: https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Connectivity
-[2]: https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Session_lifetime
+ - https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Connectivity
+ - https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Session_lifetime
