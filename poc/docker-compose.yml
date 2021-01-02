@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  seeder:
+    container_name: bchack_seeder
+    build:
+      context: ./
+      dockerfile: ./Dockerfile.seeder
