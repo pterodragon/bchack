@@ -3,12 +3,19 @@ import WebTorrent from 'webtorrent'
 
 
 async function main() {
-  let filepath = './src/seeder/content/Sintel.2010.720p.mkv'
-  let client = new WebTorrent({dhtPort: 40001})
-  let client_seed = util.promisify(client.seed)
-  let torrent = await client_seed(filepath)
+  const filepath = './src/seeder/content/Sintel.2010.720p.mkv'
+  const dht_port = 40001
+  // const client = new WebTorrent({dhtPort: dht_port})
+  const client = new WebTorrent({dhtPort: dht_port, dht: {bootstrap: false}})
+  client.p_seed = util.promisify(client.seed)
+  const seed_opts = {announceList: []}  // disable default public trackers
+  try {
+    await client.p_seed(filepath, seed_opts)
+  } catch (err) {
+    console.log(err)
+  }
+  // console.log(client.dht.toJSON())
   console.log('Client is seeding')
-  console.log(torrent)
 }
 
 main().catch(console.log)

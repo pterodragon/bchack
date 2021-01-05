@@ -9,6 +9,9 @@ services:
     volumes:
       - ./:/app
     command: "npm run-script start-seeder"
+    ports:
+      - "6881-6889"
+      - "40001"
 
   leecher:
     container_name: bchack_leecher
