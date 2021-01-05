@@ -10,6 +10,7 @@
     "start-seeder": "babel-node --presets es2017 src/seeder/main.js",
     "start-leecher": "babel-node --presets es2017 src/leecher/main.js",
     "debug-seeder": "node --inspect-brk dist/seeder/main.js"
+
   },
   "author": "",
   "license": "ISC",
