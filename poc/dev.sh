@@ -1,2 +1,2 @@
 docker-compose build
-docker-compose run -v $(pwd):/app seeder
+docker-compose run -v $(pwd):/app

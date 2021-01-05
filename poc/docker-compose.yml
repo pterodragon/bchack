@@ -5,4 +5,16 @@ services:
     container_name: bchack_seeder
     build:
       context: ./
-      dockerfile: ./Dockerfile.seeder
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./:/app
+    command: "npm run-script start-seeder"
+
+  leecher:
+    container_name: bchack_leecher
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./:/app
+    command: "npm run-script start-leecher"
