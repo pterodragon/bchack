@@ -8,39 +8,41 @@ import { ethers } from "ethers";
 /* Import statechannels wallet utilities  */
 import { Channel, State, getVariablePart } from "@statechannels/nitro-protocol";
 
-import { deploy } from "../deployment/deploy";
+import {readFileSync} from 'fs';
 
-const network = 'ropsten';
+//import { deploy } from "../deployment/deploy";
+
+const network = process.env.DAPP_NETWORK;
+const CONTRACT_ADDRESS = '0x7e1213F646f331bD77712935D54311441311598F'
 
 /* Set up an ethereum provider connected to our local blockchain */
-/*
 const portis = new Portis(process.env.DAPP_ADDRESS, network);
-portis.showPortis();
+portis.onLogin(async(walletAddress, email, reputation) => {
+  const provider = new ethers.providers.Web3Provider(portis.provider);
+  const web3 = new Web3(portis.provider);
 
-portis.onLogin((walletAddress, email, reputation) => {
-//  const provider = new ethers.providers.Web3Provider(portis.provider);
-  const provider = ethers.getDefaultProvider(network);
+  const {abi} = JSON.parse(readFileSync('abi/HelloWorld.json'));
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider.getSigner());
+
+  console.log(contract);
+  console.log(await contract.sayHello());
+
+  /*
+  const deployed = await deploy(network, process.env.WALLET_PRIVATE_KEY, process.env.INFURA_API_KEY);
+
   const { NitroAdjudicatorArtifact, } = require("@statechannels/nitro-protocol").ContractArtifacts;
-  const NitroAdjudicator = new ethers.Contract(
+  const nitroAdjudicator = new ethers.Contract(
     process.env.NITRO_ADJUDICATOR_ADDRESS,
     NitroAdjudicatorArtifact.abi,
     provider.getSigner()
   );
+  console.log(nitroAdjudicator);
+  await validTransition(walletAddress, nitroAdjudicator);
+  console.log('done');
+  */
 });
-*/
-async function main() {
-  const deployed = await deploy(network, process.env.WALLET_PRIVATE_KEY, process.env.INFURA_API_KEY);
-  console.log('deployed', deployed);
-  const provider = new ethers.providers.Web3Provider(web3.currentProvider);
-  const { NitroAdjudicatorArtifact, } = require("@statechannels/nitro-protocol").ContractArtifacts;
-  const NitroAdjudicator = new ethers.Contract(
-    deployed.NITRO_ADJUDICATOR_ADDRESS,
-    NitroAdjudicatorArtifact.abi,
-    provider.getSigner(0)
-  );
-  console.log('NitroAdjudicator', NitroAdjudicator);
-}
-main();
+portis.showPortis();
+
 
 async function validTransition(address: string, contract: ethers.Contract) {
   const participants = [
