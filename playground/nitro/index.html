@@ -2,10 +2,56 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>My First Parcel App</title>
+    <title>Nitro Protocol Playground</title>
   </head>
   <body>
-    <h1>Hello, World!</h1>
+    <h1 id='participant1'> Waiting for Portis login ... </h1>
+    <div id='step1' style='display:none'>
+      <h2> Step 1 </h2>
+      <button type="button" id="create"> Create Channel </button>
+      <div style="margin-top: 25px">
+        <div>
+          Receiver Address : 
+          <input type="text" size="60" id="participant2" value="loading ..." disabled />
+        </div>
+        <div>
+          Channel ID : 
+          <input type="text" size="60" id="channelId" value="loading ..." disabled />
+        </div>
+      </div>
+    </div>
+
+    <div id='step2' style="display:none">
+      <hr>
+      <h2> Step 2 </h2>
+      <div>
+          <input type="text" id="deposit" value="1" placeholder="wei"></td>
+          <button type="button" id="btn_deposit">deposit</button>
+      </div>
+    </div>
+
+    <div id='step3' style="display:none">
+      <hr>
+      <h2> Step 3 </h2>
+      <div>
+        Holdings : 
+        <input type="text" id="holdings" value="loading ..." disabled />
+      </div>
+      <div style="margin-top: 25px">
+          <input type="text" id="transfer" value="0.01" placeholder="wei"></td>
+          <button type="button" id="btn_transfer">transfer</button>
+      </div>
+      <ul id="history">
+      </ul>
+    </div>
+
+    <div id='step4' style="display:none">
+      <hr>
+      <h2> Step 4 </h2>
+      <button type="button" id="btn_conclude"> Conclude </button>
+    </div>
+
+
     <script src="./src/index.ts"></script>
   </body>
 </html>

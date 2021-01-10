@@ -3,77 +3,191 @@ import Portis from '@portis/web3';
 import Web3 from 'web3';
 
 /* Import ethereum wallet utilities  */
-import { ethers } from "ethers";
+import { ethers, Signer, Wallet, BigNumber, Signature } from "ethers";
+const { AddressZero, HashZero } = ethers.constants;
 
 /* Import statechannels wallet utilities  */
-import { Channel, State, getVariablePart } from "@statechannels/nitro-protocol";
+import {
+  ContractArtifacts,
+  Channel, State, Outcome, AllocationAssetOutcome, SignedState,
+   getDepositedEvent, signStates
+} from "@statechannels/nitro-protocol";
 
-import {readFileSync} from 'fs';
+import axios from "axios";
 
-//import { deploy } from "../deployment/deploy";
+main();
 
-const network = process.env.DAPP_NETWORK;
-const CONTRACT_ADDRESS = '0x7e1213F646f331bD77712935D54311441311598F'
-
-/* Set up an ethereum provider connected to our local blockchain */
-const portis = new Portis(process.env.DAPP_ADDRESS, network);
-portis.onLogin(async(walletAddress, email, reputation) => {
-  const provider = new ethers.providers.Web3Provider(portis.provider);
+async function main() {
+  /* Set up an ethereum provider connected to our local blockchain */
+  const portis = new Portis(process.env.DAPP_ADDRESS, process.env.DAPP_NETWORK);
   const web3 = new Web3(portis.provider);
 
-  const {abi} = JSON.parse(readFileSync('abi/HelloWorld.json'));
-  const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider.getSigner());
+  portis.onLogin(async(walletAddress, email, reputation) => {
+    const provider = new ethers.providers.Web3Provider(portis.provider);
+    const signer = provider.getSigner();
 
-  console.log(contract);
-  console.log(await contract.sayHello());
+    const nitroAdjudicator = new ethers.Contract(
+      process.env.NITRO_ADJUDICATOR_ADDRESS,
+      ContractArtifacts.NitroAdjudicatorArtifact.abi,
+      signer
+    );
 
-  /*
-  const deployed = await deploy(network, process.env.WALLET_PRIVATE_KEY, process.env.INFURA_API_KEY);
+    const ETHAssetHolder = new ethers.Contract(
+      process.env.ETH_ASSET_HOLDER_ADDRESS,
+      ContractArtifacts.EthAssetHolderArtifact.abi,
+      signer
+    );
 
-  const { NitroAdjudicatorArtifact, } = require("@statechannels/nitro-protocol").ContractArtifacts;
-  const nitroAdjudicator = new ethers.Contract(
-    process.env.NITRO_ADJUDICATOR_ADDRESS,
-    NitroAdjudicatorArtifact.abi,
-    provider.getSigner()
-  );
-  console.log(nitroAdjudicator);
-  await validTransition(walletAddress, nitroAdjudicator);
-  console.log('done');
-  */
-});
-portis.showPortis();
+    const current: {state: State, expectedHeld: BigNumber} = {
+      state:{
+        turnNum: 0,
+        isFinal: false,
+        //@ts-ignore
+        channel: {},
+        outcome: [],
+        appDefinition: AddressZero,
+        appData: HashZero,
+        challengeDuration: 86400, //one day
+      },
+      expectedHeld: BigNumber.from(0)
+    };
+
+    const signatures: Signature[] = [];
+
+    const manager = {
+      onDeposit: async function(channelId, wei) {
+        const amount = ethers.utils.parseUnits(wei.toString(), "wei");
+        const tx = ETHAssetHolder.deposit(channelId, current.expectedHeld, amount, {
+          value: amount,
+        });
+
+        const { events } = await (await tx).wait();
+        //const { destination, amountDeposited, destinationHoldings } = getDepositedEvent(events); 
+        const depositedEvent = getDepositedEvent(events); 
+        current.expectedHeld = depositedEvent.amountDeposited;
+        console.log({depositedEvent});
+        return depositedEvent;
+      },
+
+      onTransfer: async function(channel: Channel, amount: number) {
+        const outcome: AllocationAssetOutcome = {
+          assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
+          allocationItems: [ { destination: HashZero, amount: amount.toString(16) }, ]
+        };
+
+        //FIXME: too hacky
+        const { state } = current;
+        state.channel = channel;
+        state.turnNum += 1;
+        state.outcome.push(outcome);
+        const signature = await sign(signer, state);
+
+        signatures.push(signature);
+        return { state, signature }
+
+        //no checkpoint for now to save transaction fee
+        /*
+        const fixedPart = getFixedPart(state);
+        const variableParts = getVariablePart(state);
+        const isFinalCount = 0;
+        const tx = nitroAdjudicator.checkpoint(
+          fixedPart,
+          state.turnNum,
+          variableParts,
+          isFinalCount,
+          sigs,
+          whoSignedWhat
+        );
+        await (await tx).wait();
+        */
+      },
+
+      onConfirm: function({state, signature}: SignedState, outcomes: Outcome) {
+        //TODO: valid current state and newState
+        state.outcome = outcomes;
+        current.state = state;
+        signatures.push(signature);
+      },
+    };  //end manager
+
+    await updateUI(walletAddress, manager);
+  });
+  portis.showPortis();
+}
 
 
-async function validTransition(address: string, contract: ethers.Contract) {
-  const participants = [
-    address,
-  ];
+async function updateUI(address: string, manager: any) {
+  document.querySelector("#participant1").innerHTML = address;
 
-  const channel: Channel = {
-    participants,
-    chainId: "0x3",
-    channelNonce: 0,
-  };
+  show("#step1");
+  await new Promise(resolv=>document.querySelector('#create').addEventListener("click", resolv));
 
-  const fromState: State = {
-    channel,
-    outcome: [],
-    turnNum: 0,
-    isFinal: false,
-    challengeDuration: 0x0,
-    appDefinition: process.env.DAPP_ADDRESS, appData: "0x00",
-  };
+  //create channel
+  show("#step2");
+  const { data } = await axios.post("/channel", { participant1: address, });
+  const { channelId, channel } = data;
+  const { chainId, participants } = channel;
+  const participant2 = participants[1];
 
-  /* Construct another state */
-  const toState: State = { ...fromState, turnNum: 1};
+  document.querySelector('#participant2').value = participant2;
+  document.querySelector('#channelId').value = channelId;
 
-  await contract.validTransition(
-    channel.participants.length,
-    [fromState.isFinal, toState.isFinal],
-    [getVariablePart(fromState), getVariablePart(toState)],
-    toState.turnNum, // We only get to submit one turn number so cannot check validity
-    // If incorrect, transactions will fail during a check on state signatures
-    fromState.appDefinition
-  );
+  //deposit to holdings
+  document.querySelector('#btn_deposit').addEventListener("click", async() => {
+    const deposit = parseInt(document.querySelector('#deposit').value);
+    const { destination, amountDeposited, destinationHoldings:holdings } = await manager.onDeposit(channelId, deposit);
+    document.querySelector('#holdings').value = holdings;
+    show("#step3");
+    show("#step4");
+  });
+
+  //transfer
+  document.querySelector('#btn_transfer').addEventListener("click", async() => {
+    const amount = parseInt(document.querySelector('#transfer').value);
+    const {state, signature} = await manager.onTransfer(channel, amount);
+    const outcomes = state.outcome;
+    state.outcome = [];
+    const payload = { channelId, state, signature, outcome:state.outcome[-1] };
+    console.log({payload});
+    const { data } = await axios.post("/transfer", payload);
+    manager.onConfirm(data, outcomes);
+
+    const node = document.createElement("LI");                 // Create a <li> node
+    const textnode = document.createTextNode(JSON.stringify(outcomes[-1]));         // Create a text node
+    node.appendChild(textnode);                              // Append the text to <li>
+    document.querySelector('#history').appendChild(node);
+  });
+
+  //conclude
+  document.querySelector('#btn_conclude').addEventListener("click", async()=> {
+    hide("#step1");
+    hide("#step3");
+    const { data } = await axios.post("/conclude", { channelId });
+    //TODO: valid final state
+    alert('Conclude');
+  });
+
+}
+
+
+function show(selector: string){
+  setDisplay(selector, "block");
+}
+
+function hide(selector: string){
+  setDisplay(selector, "none");
+}
+
+function setDisplay(selector: string, display: string) {
+  //@ts-ignore
+  document.querySelector(selector).style.display = display;
+}
+
+
+async function sign(signer: Signer, state: State): Promise<Signature> {
+  //@ts-ignore: for the 2nd parameter of signStates, only wallet.signMessage is needed
+  const wallet = signer as Wallet;
+  const [signature] = await signStates([state], [wallet], [0]);
+  return signature;
 }
 
