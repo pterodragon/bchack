@@ -31,7 +31,6 @@ async function main() {
 
   app.post('/state', function(req, res) {
     const { participant1 }= req.body;
-    //const chainId = Web3.utils.randomHex(32);
     const chainId = process.env.DAPP_CHAIN_ID;
     if (!chainId) throw new Error('cannot get DAPP_CHAIN_ID from env');
     const channel = getChannel(participant1, chainId);
@@ -110,7 +109,7 @@ function getChannel(participant1: string, chainId: string): Channel {
     return {
       participants: [ participant1, participant2 ],
       chainId,
-      channelNonce: 0,
+      channelNonce: Math.floor(Math.random() * 100000) 
   };
 }
 
