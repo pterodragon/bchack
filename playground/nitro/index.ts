@@ -16,24 +16,20 @@ main();
 
 async function main() {
   const provider = new providers.InfuraProvider(process.env.DAPP_NETWORK, process.env.INFURA_API_KEY);
-  const signer = new NonceManager(new Wallet(process.env.WALLET2_PRIVATE_KEY||'', provider));
-  const channels = new Map<string, [State, Signature[]]>();
+  //const signer = new NonceManager(new Wallet(process.env.WALLET2_PRIVATE_KEY||'', provider));
+  const signer = new Wallet(process.env.WALLET2_PRIVATE_KEY||'', provider);
+  //keep SignedState in case for challenge
+  const channels = new Map<string, SignedState>();
 
   const {
     NitroAdjudicatorArtifact,
   } = require("@statechannels/nitro-protocol").ContractArtifacts;
-  const nitroAdjudicator = new ethers.Contract(
-    process.env.NITRO_ADJUDICATOR_ADDRESS || '0',
-    NitroAdjudicatorArtifact.abi,
-    signer
-  );
-  //console.log('NitroAdjudicator', NitroAdjudicator);
 
   const bundler = new Bundler('./index.html');
   const app = express();
   app.use(bodyParser.json());
 
-  app.post('/channel', function(req, res) {
+  app.post('/state', function(req, res) {
     const { participant1 }= req.body;
     //const chainId = Web3.utils.randomHex(32);
     const chainId = process.env.DAPP_CHAIN_ID;
@@ -43,60 +39,68 @@ async function main() {
     res.send({channelId, channel});
   });
 
-  app.post('/transfer', async function(req, res) {
-    const { channelId, state, signature } = req.body;
+  app.put('/state/:channelId', async function(req, res) {
+    const { channelId } = req.params;
+    const { state, signature } = req.body;
+
     const found = channels.get(channelId);
-    let signatures: Signature[] = [];
     if (found) {
       //TODO: validate state is a valid move of the oldState
-      signatures = found[1];
     }
     else {
       //TODO: validate the first state
     }
-
-    state.turnNum += 1;
-    const nextSig = await sign(signer, state);
-    signatures = [...signatures, signature, nextSig];
+    channels.set(channelId, {state, signature});
     console.log(state);
-    channels.set(channelId, [state, signatures]);
-    res.send({state, signature: nextSig});
+
+    const mysig = await sign(signer, state);
+
+    if (state.isFinal) {
+      const nitroAdjudicator = new ethers.Contract(
+        process.env.NITRO_ADJUDICATOR_ADDRESS || '0',
+        NitroAdjudicatorArtifact.abi,
+        signer
+      );
+      await conclude(nitroAdjudicator, state, [signature, mysig]);
+    }
+
+    res.send({signature: mysig});
   });
 
-  app.post('/conclude', async function(req, res) {
-    const { channelId } = req.body;
-    const data = channels.get(channelId);
-    if (!data) {
-      throw new Error(`channel ${channelId} not found for conclude`);
+  app.get('/state/:channelId', function(req, res) {
+    const { channelId } = req.params;
+    const found = channels.get(channelId);
+    if (!found) {
+      return res.sendStatus(404);
     }
-    const [ state, signatures ] = data;
 
-    /* Generate a finalization proof */
-    state.turnNum += 1;
-    state.isFinal = true;
-    const signature = await sign(signer, state);
-    signatures.push(signature);
-    console.log(state);
-
-    const fixedPart = getFixedPart(state);
-    console.log({fixedPart});
-    const appPartHash = hashAppPart(state);
-    const outcomeBytes = encodeOutcome(state.outcome);
-    const numStates = signatures.length;
-    const whoSignedWhat = Array.from(Array(numStates).keys()).map(i=>i&1);
-
-    const tx = nitroAdjudicator.concludePushOutcomeAndTransferAll(
-      state.turnNum,
-      fixedPart, appPartHash, outcomeBytes,
-      numStates, whoSignedWhat, signatures
-    );
-    await (await tx).wait();
-    res.send({state, signature});
+    res.send(found.state);
   });
 
   app.use(bundler.middleware());
   app.listen(3000);
+}
 
+
+async function conclude(nitroAdjudicator: ethers.Contract, state: State, signatures: Signature[]) {
+  /* Generate a finalization proof */
+  const fixedPart = getFixedPart(state);
+  const appPartHash = hashAppPart(state);
+  const outcomeBytes = encodeOutcome(state.outcome);
+  const numStates = 1;
+  const whoSignedWhat = new Array(signatures.length).fill(0);
+
+  console.log({
+    state,
+    fixedPart, appPartHash, outcomeBytes,
+    numStates, whoSignedWhat, signatures
+  });
+  const tx = nitroAdjudicator.concludePushOutcomeAndTransferAll(
+    state.turnNum,
+    fixedPart, appPartHash, outcomeBytes,
+    numStates, whoSignedWhat, signatures
+  );
+  await (await tx).wait();
 }
 
 

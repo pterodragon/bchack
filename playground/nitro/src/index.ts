@@ -38,7 +38,7 @@ async function main() {
       signer
     );
 
-    const current: {state: State, expectedHeld: BigNumber, signatures: Signature[]} = {
+    const session: {state: State, expectedHeld: BigNumber, signature: Signature} = {
       state:{
         turnNum: 0,
         isFinal: false,
@@ -50,43 +50,50 @@ async function main() {
         challengeDuration: 86400, //one day
       },
 
-      expectedHeld: BigNumber.from(0),
+      expectedHeld: BigNumber.from(10),
 
-      signatures: []
+      //@ts-ignore
+      //latest signature from others
+      signature: undefined
     };
 
 
     const manager = {
       onCreateChannel: async function(channelId: string, channel: Channel) {
-        const { state } = current;
+        const { state } = session;
         state.channel = channel;
 
         //reference: https://ethereum.stackexchange.com/questions/72199/testing-sha256abi-encodepacked-argument
         const destination = Web3.utils.keccak256(channel.participants[1].substring(2));
-        const amount = ethers.utils.parseUnits("0", "wei").toString();
-        const outcome: AllocationAssetOutcome = {
-          assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
-          allocationItems: [ { destination, amount }, ]
-        };
-        state.outcome.push(outcome);
-      },
+      const amount = ethers.utils.parseUnits("0", "wei").toString();
+      const outcome: AllocationAssetOutcome = {
+        assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
+        allocationItems: [ { destination, amount }, ]
+      };
+      state.outcome.push(outcome);
+    },
 
-      onDeposit: async function(channelId: string, wei: number) {
+    onDeposit: async function(channelId: string, wei: number) {
         const amount = ethers.utils.parseUnits(wei.toString(), "wei");
-        const tx = ETHAssetHolder.deposit(channelId, current.expectedHeld, amount, {
+        const tx = ETHAssetHolder.deposit(channelId, session.expectedHeld, amount, {
           value: amount,
         });
 
-        const { events } = await (await tx).wait();
-        //const { destination, amountDeposited, destinationHoldings } = getDepositedEvent(events); 
-        const depositedEvent = getDepositedEvent(events); 
-        current.expectedHeld = depositedEvent.amountDeposited;
-        console.log({depositedEvent});
-        return depositedEvent;
+        try {
+          const { events } = await (await tx).wait();
+          //const { destination, amountDeposited, destinationHoldings } = getDepositedEvent(events); 
+          const depositedEvent = getDepositedEvent(events); 
+          session.expectedHeld = depositedEvent.amountDeposited;
+          console.log({depositedEvent});
+          return depositedEvent;
+        } catch(err) {
+          console.error(err);
+          return {destinationHoldings: session.expectedHeld};
+        }
       },
 
       onTransfer: async function(channel: Channel, wei: number) {
-        const { state, signatures } = current;
+        const { state } = session;
 
         const amount:BigNumber = ethers.utils.parseUnits(wei.toString(), "wei");
         const allocation = (state.outcome[0] as AllocationAssetOutcome).allocationItems[0];
@@ -94,8 +101,6 @@ async function main() {
 
         state.turnNum += 1;
         const signature = await sign(signer, state);
-
-        signatures.push(signature);
         return { state, signature }
 
         //no checkpoint for now to save transaction fee
@@ -115,10 +120,17 @@ async function main() {
         */
       },
 
-      onConfirm: function({state, signature}: SignedState) {
-        //TODO: valid current state and newState
-        current.state = state;
-        current.signatures.push(signature);
+      onConfirm: function({signature}: {signature: Signature}) {
+        //TODO: valid participant2's signature
+        session.signature = signature;
+      },
+
+      onConclude: async function() {
+        const { state } = session;
+        state.isFinal = true;
+        state.turnNum += 1;
+        const signature = await sign(signer, state);
+        return { state, signature }
       },
     };  //end manager
 
@@ -136,7 +148,7 @@ async function updateUI(address: string, manager: any) {
 
   //create channel
   show("#step2");
-  const { data } = await axios.post("/channel", { participant1: address, });
+  const { data } = await axios.post("/state", { participant1: address, });
   const { channelId, channel } = data;
   const { chainId, participants } = channel;
   manager.onCreateChannel(channelId, channel);
@@ -147,8 +159,8 @@ async function updateUI(address: string, manager: any) {
   //deposit to holdings
   document.querySelector('#btn_deposit').addEventListener("click", async() => {
     const deposit = parseInt(document.querySelector('#deposit').value);
-    const { destination, amountDeposited, destinationHoldings:holdings } = await manager.onDeposit(channelId, deposit);
-    document.querySelector('#holdings').value = holdings;
+    const { destinationHoldings } = await manager.onDeposit(channelId, deposit);
+    document.querySelector('#holdings').value = destinationHoldings;
     show("#step3");
     show("#step4");
   });
@@ -158,21 +170,27 @@ async function updateUI(address: string, manager: any) {
     const amount = parseInt(document.querySelector('#transfer').value);
     const {state, signature} = await manager.onTransfer(channel, amount);
     console.log(state);
-    const payload = { channelId, state, signature };
-    const { data } = await axios.post("/transfer", payload);
+    const { data } = await axios.put(`/state/${channelId}`, { state, signature });
     manager.onConfirm(data);
 
-    const node = document.createElement("LI");                 // Create a <li> node
-    const textnode = document.createTextNode(JSON.stringify({outcome: state.outcome[0], signature}));         // Create a text node
-    node.appendChild(textnode);                              // Append the text to <li>
-    document.querySelector('#history').appendChild(node);
+    const li = document.createElement("LI");                 // Create a <li> node
+    const pre = document.createElement("PRE");
+    const textnode = document.createTextNode(JSON.stringify({
+      outcome: state.outcome[0], 
+      signature1: signature,
+      signature2: data.signature
+    }, null, 2));         // Create a text node
+    pre.appendChild(textnode);
+    li.appendChild(pre);                              // Append the text to <li>
+    document.querySelector('#history').appendChild(li);
   });
 
   //conclude
   document.querySelector('#btn_conclude').addEventListener("click", async()=> {
     hide("#step1");
     hide("#step3");
-    const { data } = await axios.post("/conclude", { channelId });
+    const signed = await manager.onConclude();
+    const { data } = await axios.put(`/state/${channelId}`, signed);
     //TODO: valid final state
     alert('Conclude');
   });
