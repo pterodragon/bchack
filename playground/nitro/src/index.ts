@@ -3,7 +3,7 @@ import Portis from '@portis/web3';
 import Web3 from 'web3';
 
 /* Import ethereum wallet utilities  */
-import { ethers, Signer, Wallet, BigNumber, Signature } from "ethers";
+import { ethers, utils, Signer, Wallet, BigNumber, Signature } from "ethers";
 const { AddressZero, HashZero } = ethers.constants;
 
 /* Import statechannels wallet utilities  */
@@ -69,10 +69,14 @@ async function main() {
         return depositedEvent;
       },
 
-      onTransfer: async function(channel: Channel, amount: number) {
+      onTransfer: async function(channel: Channel, wei: number) {
+        //reference: https://ethereum.stackexchange.com/questions/72199/testing-sha256abi-encodepacked-argument
+        const destination = Web3.utils.keccak256(channel.participants[1].substring(2));
+        const amount = ethers.utils.parseUnits(wei.toString(), "wei");
+        console.log({amount});
         const outcome: AllocationAssetOutcome = {
           assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
-          allocationItems: [ { destination: HashZero, amount: amount.toString(16) }, ]
+          allocationItems: [ { destination, amount }, ]
         };
 
         //FIXME: too hacky
@@ -102,9 +106,9 @@ async function main() {
         */
       },
 
-      onConfirm: function({state, signature}: SignedState, outcomes: Outcome) {
+      onConfirm: function({state, signature}: SignedState, outcome: Outcome) {
         //TODO: valid current state and newState
-        state.outcome = outcomes;
+        state.outcome = outcome;
         current.state = state;
         signatures.push(signature);
       },
@@ -127,9 +131,8 @@ async function updateUI(address: string, manager: any) {
   const { data } = await axios.post("/channel", { participant1: address, });
   const { channelId, channel } = data;
   const { chainId, participants } = channel;
-  const participant2 = participants[1];
 
-  document.querySelector('#participant2').value = participant2;
+  document.querySelector('#participant2').value = participants[1];
   document.querySelector('#channelId').value = channelId;
 
   //deposit to holdings
@@ -145,15 +148,14 @@ async function updateUI(address: string, manager: any) {
   document.querySelector('#btn_transfer').addEventListener("click", async() => {
     const amount = parseInt(document.querySelector('#transfer').value);
     const {state, signature} = await manager.onTransfer(channel, amount);
-    const outcomes = state.outcome;
-    state.outcome = [];
-    const payload = { channelId, state, signature, outcome:state.outcome[-1] };
+    const { outcome, ...partialState } = state;
+    const payload = { channelId, state: partialState, signature, outcome:outcome[outcome.length-1] };
     console.log({payload});
     const { data } = await axios.post("/transfer", payload);
-    manager.onConfirm(data, outcomes);
+    manager.onConfirm(data, outcome);
 
     const node = document.createElement("LI");                 // Create a <li> node
-    const textnode = document.createTextNode(JSON.stringify(outcomes[-1]));         // Create a text node
+    const textnode = document.createTextNode(JSON.stringify(outcome[outcome.length-1]));         // Create a text node
     node.appendChild(textnode);                              // Append the text to <li>
     document.querySelector('#history').appendChild(node);
   });

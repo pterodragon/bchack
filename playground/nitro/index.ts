@@ -2,6 +2,7 @@ import Bundler from 'parcel-bundler';
 import dotenv  from "dotenv";
 import express from 'express';
 import bodyParser from 'body-parser';
+import Web3 from 'web3';
 
 import { ethers, providers, Signer, Wallet, Signature } from "ethers";
 import { Channel, State, SignedState, getChannelId, signStates,
@@ -14,8 +15,7 @@ dotenv.config();
 main();
 
 async function main() {
-  const participant2 = process.env.WALLET2_ADDRESS || '';
-  const provider = new providers.InfuraProvider('ropsten', process.env.INFURA_API_KEY);
+  const provider = new providers.InfuraProvider(process.env.DAPP_NETWORK, process.env.INFURA_API_KEY);
   const signer = new NonceManager(new Wallet(process.env.WALLET2_PRIVATE_KEY||'', provider));
   const channels = new Map<string, [State, Signature[]]>();
 
@@ -35,7 +35,7 @@ async function main() {
 
   app.post('/channel', function(req, res) {
     const { participant1 }= req.body;
-    const chainId = Math.floor(Math.random() * 100000).toString(); 
+    const chainId = Web3.utils.randomHex(32);
     const channel = getChannel(participant1, chainId);
     const channelId = getChannelId(channel);
     res.send({channelId, channel});
@@ -52,6 +52,7 @@ async function main() {
     }
     else {
       //TODO: validate the first state
+      state.outcome = []
     }
 
     state.turnNum += 1;
@@ -95,16 +96,18 @@ async function main() {
   app.use(bundler.middleware());
   app.listen(3000);
 
-  function getChannel(participant1: string, chainId: string): Channel {
-      return {
-        participants: [ participant1, participant2 ],
-        chainId,
-        channelNonce: 0,
-    };
-  }
 }
 
 
+function getChannel(participant1: string, chainId: string): Channel {
+    const participant2 = process.env.WALLET2_ADDRESS;
+    if (!participant2) throw new Error('cannot get WALLET2_ADDRESS from .env');
+    return {
+      participants: [ participant1, participant2 ],
+      chainId,
+      channelNonce: 0,
+  };
+}
 
 async function sign(signer: Signer, state: State): Promise<Signature> {
   //@ts-ignore: for the 2nd parameter of signStates, only wallet.signMessage is needed
