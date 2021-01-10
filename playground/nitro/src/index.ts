@@ -38,7 +38,7 @@ async function main() {
       signer
     );
 
-    const current: {state: State, expectedHeld: BigNumber} = {
+    const current: {state: State, expectedHeld: BigNumber, signatures: Signature[]} = {
       state:{
         turnNum: 0,
         isFinal: false,
@@ -49,13 +49,29 @@ async function main() {
         appData: HashZero,
         challengeDuration: 86400, //one day
       },
-      expectedHeld: BigNumber.from(0)
+
+      expectedHeld: BigNumber.from(0),
+
+      signatures: []
     };
 
-    const signatures: Signature[] = [];
 
     const manager = {
-      onDeposit: async function(channelId, wei) {
+      onCreateChannel: async function(channelId: string, channel: Channel) {
+        const { state } = current;
+        state.channel = channel;
+
+        //reference: https://ethereum.stackexchange.com/questions/72199/testing-sha256abi-encodepacked-argument
+        const destination = Web3.utils.keccak256(channel.participants[1].substring(2));
+        const amount = ethers.utils.parseUnits("0", "wei").toString();
+        const outcome: AllocationAssetOutcome = {
+          assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
+          allocationItems: [ { destination, amount }, ]
+        };
+        state.outcome.push(outcome);
+      },
+
+      onDeposit: async function(channelId: string, wei: number) {
         const amount = ethers.utils.parseUnits(wei.toString(), "wei");
         const tx = ETHAssetHolder.deposit(channelId, current.expectedHeld, amount, {
           value: amount,
@@ -70,20 +86,13 @@ async function main() {
       },
 
       onTransfer: async function(channel: Channel, wei: number) {
-        //reference: https://ethereum.stackexchange.com/questions/72199/testing-sha256abi-encodepacked-argument
-        const destination = Web3.utils.keccak256(channel.participants[1].substring(2));
-        const amount = ethers.utils.parseUnits(wei.toString(), "wei");
-        console.log({amount});
-        const outcome: AllocationAssetOutcome = {
-          assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
-          allocationItems: [ { destination, amount }, ]
-        };
+        const { state, signatures } = current;
 
-        //FIXME: too hacky
-        const { state } = current;
-        state.channel = channel;
+        const amount:BigNumber = ethers.utils.parseUnits(wei.toString(), "wei");
+        const allocation = (state.outcome[0] as AllocationAssetOutcome).allocationItems[0];
+        allocation.amount = BigNumber.from(allocation.amount).add(amount).toString();
+
         state.turnNum += 1;
-        state.outcome.push(outcome);
         const signature = await sign(signer, state);
 
         signatures.push(signature);
@@ -106,11 +115,10 @@ async function main() {
         */
       },
 
-      onConfirm: function({state, signature}: SignedState, outcome: Outcome) {
+      onConfirm: function({state, signature}: SignedState) {
         //TODO: valid current state and newState
-        state.outcome = outcome;
         current.state = state;
-        signatures.push(signature);
+        current.signatures.push(signature);
       },
     };  //end manager
 
@@ -131,6 +139,7 @@ async function updateUI(address: string, manager: any) {
   const { data } = await axios.post("/channel", { participant1: address, });
   const { channelId, channel } = data;
   const { chainId, participants } = channel;
+  manager.onCreateChannel(channelId, channel);
 
   document.querySelector('#participant2').value = participants[1];
   document.querySelector('#channelId').value = channelId;
@@ -148,14 +157,13 @@ async function updateUI(address: string, manager: any) {
   document.querySelector('#btn_transfer').addEventListener("click", async() => {
     const amount = parseInt(document.querySelector('#transfer').value);
     const {state, signature} = await manager.onTransfer(channel, amount);
-    const { outcome, ...partialState } = state;
-    const payload = { channelId, state: partialState, signature, outcome:outcome[outcome.length-1] };
-    console.log({payload});
+    console.log(state);
+    const payload = { channelId, state, signature };
     const { data } = await axios.post("/transfer", payload);
-    manager.onConfirm(data, outcome);
+    manager.onConfirm(data);
 
     const node = document.createElement("LI");                 // Create a <li> node
-    const textnode = document.createTextNode(JSON.stringify(outcome[outcome.length-1]));         // Create a text node
+    const textnode = document.createTextNode(JSON.stringify({outcome: state.outcome[0], signature}));         // Create a text node
     node.appendChild(textnode);                              // Append the text to <li>
     document.querySelector('#history').appendChild(node);
   });

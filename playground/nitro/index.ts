@@ -35,31 +35,30 @@ async function main() {
 
   app.post('/channel', function(req, res) {
     const { participant1 }= req.body;
-    const chainId = Web3.utils.randomHex(32);
+    //const chainId = Web3.utils.randomHex(32);
+    const chainId = process.env.DAPP_CHAIN_ID;
+    if (!chainId) throw new Error('cannot get DAPP_CHAIN_ID from env');
     const channel = getChannel(participant1, chainId);
     const channelId = getChannelId(channel);
     res.send({channelId, channel});
   });
 
   app.post('/transfer', async function(req, res) {
-    const { channelId, state, signature, outcome } = req.body;
+    const { channelId, state, signature } = req.body;
     const found = channels.get(channelId);
     let signatures: Signature[] = [];
     if (found) {
       //TODO: validate state is a valid move of the oldState
-      state.outcome = found[0].outcome;
       signatures = found[1];
     }
     else {
       //TODO: validate the first state
-      state.outcome = []
     }
 
     state.turnNum += 1;
-    state.outcome.push(outcome);
     const nextSig = await sign(signer, state);
     signatures = [...signatures, signature, nextSig];
-    console.log({channelId, state, signatures});
+    console.log(state);
     channels.set(channelId, [state, signatures]);
     res.send({state, signature: nextSig});
   });
@@ -77,8 +76,10 @@ async function main() {
     state.isFinal = true;
     const signature = await sign(signer, state);
     signatures.push(signature);
+    console.log(state);
 
     const fixedPart = getFixedPart(state);
+    console.log({fixedPart});
     const appPartHash = hashAppPart(state);
     const outcomeBytes = encodeOutcome(state.outcome);
     const numStates = signatures.length;
