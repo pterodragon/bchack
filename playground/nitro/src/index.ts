@@ -4,6 +4,7 @@ import Web3 from 'web3';
 
 /* Import ethereum wallet utilities  */
 import { ethers, utils, Signer, Wallet, BigNumber, Signature } from "ethers";
+import { PortisEthSigner } from "./signer";
 const { AddressZero, HashZero } = ethers.constants;
 
 /* Import statechannels wallet utilities  */
@@ -17,6 +18,7 @@ import axios from "axios";
 
 main();
 
+
 async function main() {
   /* Set up an ethereum provider connected to our local blockchain */
   const portis = new Portis(process.env.DAPP_ADDRESS, process.env.DAPP_NETWORK);
@@ -24,19 +26,21 @@ async function main() {
 
   portis.onLogin(async(walletAddress, email, reputation) => {
     const provider = new ethers.providers.Web3Provider(portis.provider);
-    const signer = provider.getSigner();
+    const csigner = provider.getSigner();
 
     const nitroAdjudicator = new ethers.Contract(
       process.env.NITRO_ADJUDICATOR_ADDRESS,
       ContractArtifacts.NitroAdjudicatorArtifact.abi,
-      signer
+      csigner
     );
 
     const ETHAssetHolder = new ethers.Contract(
       process.env.ETH_ASSET_HOLDER_ADDRESS,
       ContractArtifacts.EthAssetHolderArtifact.abi,
-      signer
+      csigner
     );
+
+    const signer = new PortisEthSigner(csigner);
 
     const session: {state: State, expectedHeld: BigNumber, signature: Signature} = {
       state:{
@@ -65,8 +69,8 @@ async function main() {
 
         //reference: https://ethereum.stackexchange.com/questions/72199/testing-sha256abi-encodepacked-argument
         const destination = Web3.utils.keccak256(channel.participants[1].substring(2));
-      const amount = ethers.utils.parseUnits("0", "wei").toString();
-      const outcome: AllocationAssetOutcome = {
+        const amount = ethers.utils.parseUnits("0", "wei").toString();
+        const outcome: AllocationAssetOutcome = {
         assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
         allocationItems: [ { destination, amount }, ]
       };
@@ -214,7 +218,7 @@ function setDisplay(selector: string, display: string) {
 
 async function sign(signer: Signer, state: State): Promise<Signature> {
   //@ts-ignore: for the 2nd parameter of signStates, only wallet.signMessage is needed
-  const wallet = signer as Wallet;
+  let wallet = signer as Wallet;
   const [signature] = await signStates([state], [wallet], [0]);
   return signature;
 }
