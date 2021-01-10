@@ -99,7 +99,8 @@ async function conclude(nitroAdjudicator: ethers.Contract, state: State, signatu
     fixedPart, appPartHash, outcomeBytes,
     numStates, whoSignedWhat, signatures
   );
-  await (await tx).wait();
+  const result = await (await tx).wait();
+  console.log(result);
 }
 
 
