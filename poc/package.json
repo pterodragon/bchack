@@ -4,11 +4,11 @@
   "description": "",
   "main": "src/app.js",
   "scripts": {
-    "build": "babel --source-maps --presets es2015 -d dist/ src",
-    "watch": "babel --watch --source-maps --presets es2015 -d dist/ src",
-    "start": "babel-node --presets es2015 src/app.js",
-    "start-seeder": "babel-node --presets es2015 src/seeder/main.js",
-    "start-leecher": "babel-node --presets es2015 src/leecher/main.js",
+    "build": "babel --source-maps -d dist/ src",
+    "watch": "babel --watch --source-maps -d dist/ src",
+    "start": "babel-node src/app.js",
+    "start-seeder": "babel-node src/seeder/main.js",
+    "start-leecher": "babel-node src/leecher/main.js",
     "debug-seeder": "node --inspect-brk dist/seeder/main.js"
   },
   "dependencies": {
