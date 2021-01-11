@@ -55,7 +55,7 @@ async function main() {
         challengeDuration: 86400, //one day
       },
 
-      expectedHeld: BigNumber.from(10000),
+      expectedHeld: BigNumber.from(0),
 
       //@ts-ignore
       //latest signature from others
@@ -72,7 +72,7 @@ async function main() {
         const destination0 = Web3.utils.keccak256(channel.participants[1].substring(2));
         const destination = convertAddressToBytes32(channel.participants[1]);
         console.log(destination0, destination);
-        const amount = ethers.utils.parseUnits("0", "gwei").toString();
+        const amount = ethers.utils.parseUnits("0", "gwei").toHexString();
         const outcome: AllocationAssetOutcome = {
         assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
         allocationItems: [ { destination, amount }, ]
@@ -104,7 +104,7 @@ async function main() {
 
         const amount:BigNumber = ethers.utils.parseUnits(value.toString(), "gwei");
         const allocation = (state.outcome[0] as AllocationAssetOutcome).allocationItems[0];
-        allocation.amount = BigNumber.from(allocation.amount).add(amount).toString();
+        allocation.amount = BigNumber.from(allocation.amount).add(amount).toHexString();
 
         state.turnNum += 1;
         const signature = await sign(signer, state);
