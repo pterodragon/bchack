@@ -11,7 +11,7 @@ const { AddressZero, HashZero } = ethers.constants;
 import {
   ContractArtifacts,
   Channel, State, Outcome, AllocationAssetOutcome, SignedState,
-   getDepositedEvent, signStates
+  getDepositedEvent, signStates
 } from "@statechannels/nitro-protocol";
 
 import axios from "axios";
@@ -62,7 +62,7 @@ async function main() {
     };
 
 
-    const manager = {
+    const controller = {
       onCreateChannel: async function(channelId: string, channel: Channel) {
         const { state } = session;
         state.channel = channel;
@@ -136,15 +136,15 @@ async function main() {
         const signature = await sign(signer, state);
         return { state, signature }
       },
-    };  //end manager
+    };  //end controller
 
-    await updateUI(walletAddress, manager);
+    await updateUI(walletAddress, controller);
   });
   portis.showPortis();
 }
 
 
-async function updateUI(address: string, manager: any) {
+async function updateUI(address: string, controller: any) {
   document.querySelector("#participant1").innerHTML = address;
 
   show("#step1");
@@ -155,7 +155,7 @@ async function updateUI(address: string, manager: any) {
   const { data } = await axios.post("/state", { participant1: address, });
   const { channelId, channel } = data;
   const { chainId, participants } = channel;
-  manager.onCreateChannel(channelId, channel);
+  controller.onCreateChannel(channelId, channel);
 
   document.querySelector('#participant2').value = participants[1];
   document.querySelector('#channelId').value = channelId;
@@ -163,7 +163,7 @@ async function updateUI(address: string, manager: any) {
   //deposit to holdings
   document.querySelector('#btn_deposit').addEventListener("click", async() => {
     const deposit = parseInt(document.querySelector('#deposit').value);
-    const { destinationHoldings } = await manager.onDeposit(channelId, deposit);
+    const { destinationHoldings } = await controller.onDeposit(channelId, deposit);
     document.querySelector('#holdings').value = destinationHoldings;
     show("#step3");
     show("#step4");
@@ -172,10 +172,10 @@ async function updateUI(address: string, manager: any) {
   //transfer
   document.querySelector('#btn_transfer').addEventListener("click", async() => {
     const amount = parseInt(document.querySelector('#transfer').value);
-    const {state, signature} = await manager.onTransfer(channel, amount);
+    const {state, signature} = await controller.onTransfer(channel, amount);
     console.log(state);
     const { data } = await axios.put(`/state/${channelId}`, { state, signature });
-    manager.onConfirm(data);
+    controller.onConfirm(data);
 
     const li = document.createElement("LI");                 // Create a <li> node
     const pre = document.createElement("PRE");
@@ -193,7 +193,7 @@ async function updateUI(address: string, manager: any) {
   document.querySelector('#btn_conclude').addEventListener("click", async()=> {
     hide("#step1");
     hide("#step3");
-    const signed = await manager.onConclude();
+    const signed = await controller.onConclude();
     const { data } = await axios.put(`/state/${channelId}`, signed);
     //TODO: valid final state
     alert('Conclude');
@@ -218,7 +218,7 @@ function setDisplay(selector: string, display: string) {
 
 async function sign(signer: Signer, state: State): Promise<Signature> {
   //@ts-ignore: for the 2nd parameter of signStates, only wallet.signMessage is needed
-  let wallet = signer as Wallet;
+  const wallet = signer as Wallet;
   const [signature] = await signStates([state], [wallet], [0]);
   return signature;
 }

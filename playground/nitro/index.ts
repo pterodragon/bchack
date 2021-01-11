@@ -8,7 +8,6 @@ import { ethers, providers, Signer, Wallet, Signature } from "ethers";
 import { Channel, State, SignedState, getChannelId, signStates,
   getFixedPart, getVariablePart, hashAppPart, hashOutcome, encodeOutcome,
 } from "@statechannels/nitro-protocol";
-import {NonceManager} from '@ethersproject/experimental';
 
 dotenv.config();
 
@@ -16,7 +15,6 @@ main();
 
 async function main() {
   const provider = new providers.InfuraProvider(process.env.DAPP_NETWORK, process.env.INFURA_API_KEY);
-  //const signer = new NonceManager(new Wallet(process.env.WALLET2_PRIVATE_KEY||'', provider));
   const signer = new Wallet(process.env.WALLET2_PRIVATE_KEY||'', provider);
   //keep SignedState in case for challenge
   const channels = new Map<string, SignedState>();
@@ -25,7 +23,6 @@ async function main() {
     NitroAdjudicatorArtifact,
   } = require("@statechannels/nitro-protocol").ContractArtifacts;
 
-  const bundler = new Bundler('./index.html');
   const app = express();
   app.use(bodyParser.json());
 
@@ -76,7 +73,9 @@ async function main() {
     res.send(found.state);
   });
 
+  const bundler = new Bundler('./index.html');
   app.use(bundler.middleware());
+
   app.listen(3000);
 }
 

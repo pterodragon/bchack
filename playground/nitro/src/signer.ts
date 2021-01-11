@@ -17,6 +17,8 @@ export class PortisEthSigner {
     // https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sign
     //return await super.provider.send("eth_sign", [ address.toLowerCase(), hexlify(data) ]);
     //return await web3.eth.sign( address.toLowerCase(), hexlify(data) );
-    return await this.signer.provider.send("personal_sign", [ address.toLowerCase(), hexlify(data) ]);
+
+    //The eth_personalSign method requires params ordered [message, address].
+    return await this.signer.provider.send("personal_sign", [ hexlify(data), address.toLowerCase() ]);
   }
 }
