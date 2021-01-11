@@ -11,7 +11,8 @@ const { AddressZero, HashZero } = ethers.constants;
 import {
   ContractArtifacts,
   Channel, State, Outcome, AllocationAssetOutcome, SignedState,
-  getDepositedEvent, signStates
+  getDepositedEvent, signStates,
+  convertAddressToBytes32,
 } from "@statechannels/nitro-protocol";
 
 import axios from "axios";
@@ -68,7 +69,9 @@ async function main() {
         state.channel = channel;
 
         //reference: https://ethereum.stackexchange.com/questions/72199/testing-sha256abi-encodepacked-argument
-        const destination = Web3.utils.keccak256(channel.participants[1].substring(2));
+        const destination0 = Web3.utils.keccak256(channel.participants[1].substring(2));
+        const destination = convertAddressToBytes32(channel.participants[1]);
+        console.log(destination0, destination);
         const amount = ethers.utils.parseUnits("0", "gwei").toString();
         const outcome: AllocationAssetOutcome = {
         assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,

@@ -7,6 +7,7 @@ import Web3 from 'web3';
 import { ethers, providers, Signer, Wallet, Signature } from "ethers";
 import { Channel, State, SignedState, getChannelId, signStates,
   getFixedPart, getVariablePart, hashAppPart, hashOutcome, encodeOutcome,
+  ContractArtifacts
 } from "@statechannels/nitro-protocol";
 
 dotenv.config();
@@ -18,10 +19,6 @@ async function main() {
   const signer = new Wallet(process.env.WALLET2_PRIVATE_KEY||'', provider);
   //keep SignedState in case for challenge
   const channels = new Map<string, SignedState>();
-
-  const {
-    NitroAdjudicatorArtifact,
-  } = require("@statechannels/nitro-protocol").ContractArtifacts;
 
   const app = express();
   app.use(bodyParser.json());
@@ -54,7 +51,7 @@ async function main() {
     if (state.isFinal) {
       const nitroAdjudicator = new ethers.Contract(
         process.env.NITRO_ADJUDICATOR_ADDRESS || '0',
-        NitroAdjudicatorArtifact.abi,
+        ContractArtifacts.NitroAdjudicatorArtifact.abi,
         signer
       );
       await conclude(nitroAdjudicator, state, [signature, mysig]);
