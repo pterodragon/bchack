@@ -72,7 +72,7 @@ async function main() {
         const destination0 = Web3.utils.keccak256(channel.participants[1].substring(2));
         const destination = convertAddressToBytes32(channel.participants[1]);
         console.log(destination0, destination);
-        const amount = ethers.utils.parseUnits("0", "gwei").toHexString();
+        const amount = ethers.utils.parseUnits("0", "wei").toHexString();
         const outcome: AllocationAssetOutcome = {
         assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
         allocationItems: [ { destination, amount }, ]
@@ -81,7 +81,7 @@ async function main() {
     },
 
     onDeposit: async function(channelId: string, value: number) {
-        const amount = ethers.utils.parseUnits(value.toString(), "gwei");
+        const amount = ethers.utils.parseUnits(value.toString(), "wei");
         const tx = ETHAssetHolder.deposit(channelId, session.expectedHeld, amount, {
           value: amount,
         });
@@ -102,7 +102,7 @@ async function main() {
       onTransfer: async function(channel: Channel, value: number) {
         const { state } = session;
 
-        const amount:BigNumber = ethers.utils.parseUnits(value.toString(), "gwei");
+        const amount:BigNumber = ethers.utils.parseUnits(value.toString(), "wei");
         const allocation = (state.outcome[0] as AllocationAssetOutcome).allocationItems[0];
         allocation.amount = BigNumber.from(allocation.amount).add(amount).toHexString();
 
