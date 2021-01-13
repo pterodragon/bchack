@@ -140,11 +140,11 @@ async function main() {
   };
 
   if (process.env.LOCAL_TEST) {
-    const provider = new ethers.providers.JsonRpcProvider(`http://localhost:${process.env.GANACHE_PORT}`);
-    const csigner = provider.getSigner(0);
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const csigner = provider.getSigner();
     const signer = csigner;
     await onLogin(csigner, signer)(
-      '0x8e96ccd46005f905ca1534cea49536afaf2f9986',
+      process.env.WALLET1_ADDRESS,
       'cornsmeetup@gmail.com',
       1
     );
