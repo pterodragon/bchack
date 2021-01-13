@@ -1,7 +1,9 @@
 const { deploy } = require("./deployment/deploy.js");
+const dotenv = require('dotenv');
+dotenv.config();
 
 async function main() {
-  const deployedArtifacts = await deploy('0x78d01603751d0ecd4e8138ba897a687a014c4672a2198e845470ac6c581b8e1d');
+  const deployedArtifacts = await deploy(process.env.WALLET_PRIVATE_KEY);
   console.log(deployedArtifacts);
 }
 
