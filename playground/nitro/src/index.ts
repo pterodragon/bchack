@@ -52,7 +52,8 @@ async function main() {
         outcome: [],
         appDefinition: AddressZero,
         appData: HashZero,
-        challengeDuration: 86400, //one day
+        //challengeDuration: 86400, //one day
+        challengeDuration: 60,
       },
 
       expectedHeld: BigNumber.from(0),
@@ -69,18 +70,17 @@ async function main() {
         state.channel = channel;
 
         //reference: https://ethereum.stackexchange.com/questions/72199/testing-sha256abi-encodepacked-argument
-        const destination0 = Web3.utils.keccak256(channel.participants[1].substring(2));
+        //const destination = Web3.utils.keccak256(channel.participants[1].substring(2));
         const destination = convertAddressToBytes32(channel.participants[1]);
-        console.log(destination0, destination);
         const amount = ethers.utils.parseUnits("0", "wei").toHexString();
         const outcome: AllocationAssetOutcome = {
-        assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
-        allocationItems: [ { destination, amount }, ]
-      };
-      state.outcome.push(outcome);
-    },
+          assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
+          allocationItems: [ { destination, amount }, ]
+        };
+        state.outcome.push(outcome);
+      },
 
-    onDeposit: async function(channelId: string, value: number) {
+      onDeposit: async function(channelId: string, value: number) {
         const amount = ethers.utils.parseUnits(value.toString(), "wei");
         const tx = ETHAssetHolder.deposit(channelId, session.expectedHeld, amount, {
           value: amount,
@@ -128,7 +128,7 @@ async function main() {
       },
 
       onConfirm: function({signature}: {signature: Signature}) {
-        //TODO: valid participant2's signature
+        //TODO: valid receiver's signature
         session.signature = signature;
       },
 
@@ -148,19 +148,19 @@ async function main() {
 
 
 async function updateUI(address: string, controller: any) {
-  document.querySelector("#participant1").innerHTML = address;
+  document.querySelector("#payer").innerHTML = address;
 
   show("#step1");
   await new Promise(resolv=>document.querySelector('#create').addEventListener("click", resolv));
 
   //create channel
   show("#step2");
-  const { data } = await axios.post("/state", { participant1: address, });
+  const { data } = await axios.post("/state", { payer: address, });
   const { channelId, channel } = data;
   const { chainId, participants } = channel;
   controller.onCreateChannel(channelId, channel);
 
-  document.querySelector('#participant2').value = participants[1];
+  document.querySelector('#receiver').value = participants[1];
   document.querySelector('#channelId').value = channelId;
 
   //deposit to holdings

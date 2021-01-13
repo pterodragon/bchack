@@ -24,10 +24,10 @@ async function main() {
   app.use(bodyParser.json());
 
   app.post('/state', function(req, res) {
-    const { participant1 }= req.body;
+    const { payer }= req.body;
     const chainId = process.env.DAPP_CHAIN_ID;
     if (!chainId) throw new Error('cannot get DAPP_CHAIN_ID from env');
-    const channel = getChannel(participant1, chainId);
+    const channel = getChannel(payer, chainId);
     const channelId = getChannelId(channel);
     res.send({channelId, channel});
   });
@@ -100,11 +100,11 @@ async function conclude(nitroAdjudicator: ethers.Contract, state: State, signatu
 }
 
 
-function getChannel(participant1: string, chainId: string): Channel {
-    const participant2 = process.env.WALLET2_ADDRESS;
-    if (!participant2) throw new Error('cannot get WALLET2_ADDRESS from .env');
+function getChannel(payer: string, chainId: string): Channel {
+    const receiver = process.env.WALLET2_ADDRESS;
+    if (!receiver) throw new Error('cannot get WALLET2_ADDRESS from .env');
     return {
-      participants: [ participant1, participant2 ],
+      participants: [ payer, receiver ],
       chainId,
       channelNonce: Math.floor(Math.random() * 100000) 
   };
