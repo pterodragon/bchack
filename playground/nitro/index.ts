@@ -15,8 +15,16 @@ dotenv.config();
 main();
 
 async function main() {
-  const provider = new providers.InfuraProvider(process.env.DAPP_NETWORK, process.env.INFURA_API_KEY);
-  const signer = new Wallet(process.env.WALLET2_PRIVATE_KEY||'', provider);
+  let provider, signer;
+
+  if (process.env.LOCAL_TEST) {
+    provider = new ethers.providers.JsonRpcProvider( `http://localhost:${process.env.GANACHE_PORT}`);
+    signer = provider.getSigner(0);
+  }
+  else {
+    provider = new providers.InfuraProvider(process.env.DAPP_NETWORK, process.env.INFURA_API_KEY);
+    signer = new Wallet(process.env.WALLET2_PRIVATE_KEY||'', provider);
+  }
   //keep SignedState in case for challenge
   const channels = new Map<string, SignedState>();
 
@@ -73,7 +81,7 @@ async function main() {
   const bundler = new Bundler('./index.html');
   app.use(bundler.middleware());
 
-  app.listen(3000);
+  app.listen(Number(process.env.SERVER_PORT || 3000));
 }
 
 

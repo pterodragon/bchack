@@ -24,10 +24,7 @@ async function main() {
   /* Set up an ethereum provider connected to our local blockchain */
   const portis = new Portis(process.env.DAPP_ADDRESS, process.env.DAPP_NETWORK);
   const web3 = new Web3(portis.provider);
-
-  portis.onLogin(async(walletAddress, email, reputation) => {
-    const provider = new ethers.providers.Web3Provider(portis.provider);
-    const csigner = provider.getSigner();
+  const onLogin = (csigner, signer) => async function(walletAddress, email, reputation) {
 
     const nitroAdjudicator = new ethers.Contract(
       process.env.NITRO_ADJUDICATOR_ADDRESS,
@@ -40,8 +37,6 @@ async function main() {
       ContractArtifacts.EthAssetHolderArtifact.abi,
       csigner
     );
-
-    const signer = new PortisEthSigner(csigner);
 
     const session: {state: State, expectedHeld: BigNumber, signature: Signature} = {
       state:{
@@ -142,8 +137,25 @@ async function main() {
     };  //end controller
 
     await updateUI(walletAddress, controller);
-  });
-  portis.showPortis();
+  };
+
+  if (process.env.LOCAL_TEST) {
+    const provider = new ethers.providers.JsonRpcProvider(`http://localhost:${process.env.GANACHE_PORT}`);
+    const csigner = provider.getSigner(0);
+    const signer = csigner;
+    await onLogin(csigner, signer)(
+      '0x8e96ccd46005f905ca1534cea49536afaf2f9986',
+      'cornsmeetup@gmail.com',
+      1
+    );
+  }
+  else {
+    const provider = new ethers.providers.Web3Provider(portis.provider);
+    const csigner = provider.getSigner();
+    const signer = new PortisEthSigner(csigner);
+    portis.onLogin(onLogin(csigner, signer));
+    portis.showPortis();
+  }
 }
 
 
