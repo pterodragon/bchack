@@ -32,7 +32,7 @@ async function main() {
       csigner
     );
 
-    const ETHAssetHolder = new ethers.Contract(
+    const ethAssetHolder = new ethers.Contract(
       process.env.ETH_ASSET_HOLDER_ADDRESS,
       ContractArtifacts.EthAssetHolderArtifact.abi,
       csigner
@@ -75,9 +75,9 @@ async function main() {
         state.outcome.push(outcome);
       },
 
-      onDeposit: async function(channelId: string, value: number) {
-        const amount = ethers.utils.parseUnits(value.toString(), "wei");
-        const tx = ETHAssetHolder.deposit(channelId, session.expectedHeld, amount, {
+      onDeposit: async function(channelId: string, value: string) {
+        const amount = ethers.utils.parseUnits(value, "wei");
+        const tx = ethAssetHolder.deposit(channelId, session.expectedHeld, amount, {
           value: amount,
         });
 
@@ -94,10 +94,10 @@ async function main() {
         }
       },
 
-      onTransfer: async function(channel: Channel, value: number) {
+      onTransfer: async function(channel: Channel, value: string) {
         const { state } = session;
 
-        const amount:BigNumber = ethers.utils.parseUnits(value.toString(), "wei");
+        const amount:BigNumber = ethers.utils.parseUnits(value, "wei");
         const allocation = (state.outcome[0] as AllocationAssetOutcome).allocationItems[0];
         allocation.amount = BigNumber.from(allocation.amount).add(amount).toHexString();
 
@@ -177,8 +177,8 @@ async function updateUI(address: string, controller: any) {
 
   //deposit to holdings
   document.querySelector('#btn_deposit').addEventListener("click", async() => {
-    const deposit = parseInt(document.querySelector('#deposit').value);
-    const { destinationHoldings } = await controller.onDeposit(channelId, deposit);
+    const { value } = document.querySelector('#deposit');
+    const { destinationHoldings } = await controller.onDeposit(channelId, value);
     document.querySelector('#holdings').value = destinationHoldings;
     show("#step3");
     show("#step4");
@@ -186,8 +186,8 @@ async function updateUI(address: string, controller: any) {
 
   //transfer
   document.querySelector('#btn_transfer').addEventListener("click", async() => {
-    const amount = parseInt(document.querySelector('#transfer').value);
-    const {state, signature} = await controller.onTransfer(channel, amount);
+    const { value } = document.querySelector('#transfer');
+    const {state, signature} = await controller.onTransfer(channel, value);
     console.log(state);
     const { data } = await axios.put(`/state/${channelId}`, { state, signature });
     controller.onConfirm(data);

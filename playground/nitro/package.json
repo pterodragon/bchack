@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "nodemon index.ts",
-    "watch:debug": "nodemon -e ts --exec 'node --inspect --require ts-node/register index.ts'"
+    "watch:debug": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register index.ts'"
   },
   "dependencies": {
     "@portis/web3": "^3.0.2",

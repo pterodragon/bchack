@@ -25,6 +25,18 @@ async function main() {
     provider = new providers.InfuraProvider(process.env.DAPP_NETWORK, process.env.INFURA_API_KEY);
     signer = new Wallet(process.env.WALLET2_PRIVATE_KEY||'', provider);
   }
+
+  const nitroAdjudicator = new ethers.Contract(
+    process.env.NITRO_ADJUDICATOR_ADDRESS || '0',
+    ContractArtifacts.NitroAdjudicatorArtifact.abi,
+    signer
+  );
+  const ethAssetHolder = new ethers.Contract(
+    process.env.ETH_ASSET_HOLDER_ADDRESS || '0',
+    ContractArtifacts.EthAssetHolderArtifact.abi,
+    signer
+  );
+
   //keep SignedState in case for challenge
   const channels = new Map<string, SignedState>();
 
@@ -57,12 +69,7 @@ async function main() {
     const mysig = await sign(signer, state);
 
     if (state.isFinal) {
-      const nitroAdjudicator = new ethers.Contract(
-        process.env.NITRO_ADJUDICATOR_ADDRESS || '0',
-        ContractArtifacts.NitroAdjudicatorArtifact.abi,
-        signer
-      );
-      await conclude(nitroAdjudicator, state, [signature, mysig]);
+      await conclude(nitroAdjudicator, ethAssetHolder, state, [signature, mysig]);
     }
 
     res.send({signature: mysig});
@@ -85,7 +92,7 @@ async function main() {
 }
 
 
-async function conclude(nitroAdjudicator: ethers.Contract, state: State, signatures: Signature[]) {
+async function conclude(nitroAdjudicator: ethers.Contract, ethAssetHolder: ethers.Contract, state: State, signatures: Signature[]) {
   /* Generate a finalization proof */
   const fixedPart = getFixedPart(state);
   const appPartHash = hashAppPart(state);
@@ -103,8 +110,10 @@ async function conclude(nitroAdjudicator: ethers.Contract, state: State, signatu
     fixedPart, appPartHash, outcomeBytes,
     numStates, whoSignedWhat, signatures
   );
-  const result = await (await tx).wait();
-  console.log(result);
+
+  const {logs} = await (await tx).wait();
+  const events = compileEventsFromLogs(logs, [ ethAssetHolder, nitroAdjudicator, ]);
+  console.log({events});
 }
 
 
@@ -125,3 +134,16 @@ async function sign(signer: Signer, state: State): Promise<Signature> {
   return signature;
 }
 
+
+function compileEventsFromLogs(logs: any[], contractsArray: ethers.Contract[]): Event[] {
+  const events = [];
+  logs.forEach(log => {
+    contractsArray.forEach(contract => {
+      if (log.address === contract.address) {
+        //@ts-ignore
+        events.push({...contract.interface.parseLog(log), contract: log.address});
+      }
+    });
+  });
+  return events;
+}
