@@ -48,7 +48,7 @@ async function main() {
         appDefinition: AddressZero,
         appData: HashZero,
         //challengeDuration: 86400, //one day
-        challengeDuration: 60,
+        challengeDuration: 10,
       },
 
       expectedHeld: BigNumber.from(0),
@@ -67,7 +67,7 @@ async function main() {
         //reference: https://ethereum.stackexchange.com/questions/72199/testing-sha256abi-encodepacked-argument
         //const destination = Web3.utils.keccak256(channel.participants[1].substring(2));
         const destination = convertAddressToBytes32(channel.participants[1]);
-        const amount = ethers.utils.parseUnits("0", "wei").toHexString();
+        const amount = ethers.utils.parseUnits("0", "gwei").toHexString();
         const outcome: AllocationAssetOutcome = {
           assetHolderAddress: process.env.ETH_ASSET_HOLDER_ADDRESS,
           allocationItems: [ { destination, amount }, ]
@@ -76,10 +76,9 @@ async function main() {
       },
 
       onDeposit: async function(channelId: string, value: string) {
-        const amount = ethers.utils.parseUnits(value, "wei");
-        const tx = ethAssetHolder.deposit(channelId, session.expectedHeld, amount, {
-          value: amount,
-        });
+        const amount = ethers.utils.parseUnits(value, "gwei");
+        console.log(channelId, session.expectedHeld, amount, { value: amount });
+        const tx = ethAssetHolder.deposit(channelId, session.expectedHeld, amount, { value: amount });
 
         try {
           const { events } = await (await tx).wait();
@@ -97,7 +96,7 @@ async function main() {
       onTransfer: async function(channel: Channel, value: string) {
         const { state } = session;
 
-        const amount:BigNumber = ethers.utils.parseUnits(value, "wei");
+        const amount:BigNumber = ethers.utils.parseUnits(value, "gwei");
         const allocation = (state.outcome[0] as AllocationAssetOutcome).allocationItems[0];
         allocation.amount = BigNumber.from(allocation.amount).add(amount).toHexString();
 

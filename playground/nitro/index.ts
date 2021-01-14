@@ -113,7 +113,7 @@ async function conclude(nitroAdjudicator: ethers.Contract, ethAssetHolder: ether
 
   const {logs} = await (await tx).wait();
   const events = compileEventsFromLogs(logs, [ ethAssetHolder, nitroAdjudicator, ]);
-  console.log({events});
+  console.log({events: JSON.stringify(events, null, 2)});
 }
 
 
