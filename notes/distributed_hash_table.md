@@ -31,3 +31,5 @@
   - https://stackoverflow.com/questions/19329682/adding-new-nodes-to-kademlia-building-kademlia-routing-tables
   - https://codethechange.stanford.edu/guides/guide_kademlia.html#walkthrough-of-a-kademlia-network-genesis
     - very neatly explained!!
+  - http://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf
+    - white paper

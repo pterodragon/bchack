@@ -1,4 +1,8 @@
 # Related topics
+## Web3torrent
+- site: https://blog.statechannels.org/introducing-web3torrent/
+- exactly what we're doing?
+
 ## Bittorrent BTT
 - token as incentive to seeds
 - BitTorrent Speed (TM)
