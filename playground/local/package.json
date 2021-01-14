@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "ganache-cli --account=0xa9318fedc469b933a862dc050106c6fa8b0b3cc8e569385cdd86c75d648cd84f,1000000000000000000 --account=0x78d01603751d0ecd4e8138ba897a687a014c4672a2198e845470ac6c581b8e1d,200000000000000000000 --chainId=0x5",
+    "start": "ganache-cli --account=0xa9318fedc469b933a862dc050106c6fa8b0b3cc8e569385cdd86c75d648cd84f,1000000000000000000 --account=0x78d01603751d0ecd4e8138ba897a687a014c4672a2198e845470ac6c581b8e1d,200000000000000000000 --chainId=0x9",
     "deploy": "node deploy.js"
   },
   "dependencies": {
