@@ -77,7 +77,6 @@ async function main() {
 
       onDeposit: async function(channelId: string, value: string) {
         const amount = ethers.utils.parseUnits(value, "gwei");
-        console.log(channelId, session.expectedHeld, amount, { value: amount });
         const tx = ethAssetHolder.deposit(channelId, session.expectedHeld, amount, { value: amount });
 
         try {
