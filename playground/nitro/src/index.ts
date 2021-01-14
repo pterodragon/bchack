@@ -138,6 +138,7 @@ async function main() {
   };
 
   if (process.env.LOCAL_TEST) {
+    await window.ethereum.enable();
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const csigner = provider.getSigner();
     const signer = csigner;
