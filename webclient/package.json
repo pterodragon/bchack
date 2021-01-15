@@ -1,0 +1,49 @@
+{
+  "name": "webclient",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "license": "MIT",
+  "scripts": {
+    "react-start": "parcel -p 3000 index.html --out-dir build",
+    "react-build": "parcel build index.html --out-dir build --public-url ./",
+    "clean-build": "rm -rf build/ .cache dist/",
+    "build": "yarn clean-build && yarn react-build",
+    "start": "yarn react-start"
+  },
+  "dependencies": {
+    "@material-ui/core": "^4.0.0",
+    "@material-ui/data-grid": "^4.0.0-alpha.17",
+    "@material-ui/icons": "^4.11.2",
+    "@types/react": "^16.8.6 || ^17.0.0",
+    "axios": "latest",
+    "jwt-decode": "^3.1.2",
+    "prop-types": "latest",
+    "react": "^16.8.0 || ^17.0.0",
+    "react-dom": "^16.8.0 || ^17.0.0",
+    "react-redux": "latest",
+    "react-router-dom": "latest",
+    "redux": "latest",
+    "redux-thunk": "latest"
+  },
+  "devDependencies": {
+    "babel-core": "latest",
+    "babel-plugin-transform-class-properties": "latest",
+    "babel-plugin-transform-object-rest-spread": "latest",
+    "babel-plugin-transform-react-jsx": "latest",
+    "babel-preset-env": "latest",
+    "babel-preset-react": "latest",
+    "parcel-bundler": "latest"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
