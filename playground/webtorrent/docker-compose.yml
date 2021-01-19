@@ -12,8 +12,8 @@ services:
     ports:
       - "6881-6889"
       - "40001"
-    environment:
-      DEBUG: '*'
+        #     environment:
+        #       DEBUG: '*'
 
   leecher:
     container_name: bchack_leecher
@@ -23,5 +23,5 @@ services:
     volumes:
       - ./:/app
     command: "npm run start-leecher"
-    environment:
-      DEBUG: '*'
+    #     environment:
+    #       DEBUG: '*'

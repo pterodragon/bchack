@@ -13,7 +13,5 @@ export class ExTorrent {
 
   _onWire(wire: Wire, addr) {
     wire.use(ut_sidetalk)
-    const ut_sidetalk_ext = wire[ut_sidetalk.name]
-    ut_sidetalk_ext.send('ztest3 tag', {'ztest3': 'ztest3'})
   }
 }
