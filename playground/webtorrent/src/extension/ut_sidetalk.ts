@@ -1,4 +1,4 @@
-import {Extension} from 'bittorrent-protocol';
+import {Extension, Wire} from 'bittorrent-protocol';
 import EventEmitter from 'eventemitter3';
 
 export class ut_sidetalk extends EventEmitter implements Extension {
@@ -19,9 +19,11 @@ export class ut_sidetalk extends EventEmitter implements Extension {
     }
   }
 
-  public send(tag:string, value: object): void {
+  public send(tag: string, value: object): void {
     console.log('ut_sidetalk extension send')
     const buf = Buffer.from(JSON.stringify(value));
     this.wire.extended(this.name, buf);
   }
 }
+
+ut_sidetalk.prototype.name = 'ut_sidetalk'

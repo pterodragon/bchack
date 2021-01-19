@@ -1,12 +1,17 @@
-import {WebTorrent} from 'webtorrent';
+import WebTorrent from 'webtorrent';
 import {ExTorrent} from '../lib/extorrent'
 
-export default class SCClient extends WebTorrent {
-  // State Channel Client
+// State Channel Client
+export class SCClient {
+  webtorrent: WebTorrent
 
-  // @ts-ignore: fuck typescript here
+  constructor(webtorrent: WebTorrent) {
+    this.webtorrent = webtorrent
+  }
+
   seed(input, opts, cb?): ExTorrent {
     console.log('SCClient seed')
-    return super.seed(input, opts, cb) as ExTorrent
+    const extor = new ExTorrent(this.webtorrent.seed(input, opts, cb))
+    return extor
   }
 }
