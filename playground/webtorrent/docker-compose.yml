@@ -9,19 +9,29 @@ services:
     volumes:
       - ./:/app
     command: "npm run start-seeder"
-    ports:
-      - "6881-6889"
-      - "40001"
-        #     environment:
-        #       DEBUG: '*'
+    # network_mode: host
+    # environment:
+    #   DEBUG: '*'
 
-  leecher:
-    container_name: bchack_leecher
+  leecher0:
+    container_name: bchack_leecher0
     build:
       context: ./
       dockerfile: ./Dockerfile
     volumes:
       - ./:/app
     command: "npm run start-leecher"
-    #     environment:
-    #       DEBUG: '*'
+    # network_mode: host
+    # environment:
+    #   DEBUG: '*'
+
+    # leecher1:
+    #   container_name: bchack_leecher1
+    #   build:
+    #     context: ./
+    #     dockerfile: ./Dockerfile
+    #   volumes:
+    #     - ./:/app
+    #   command: "npm run start-leecher"
+    #   # environment:
+    #   #   DEBUG: '*'

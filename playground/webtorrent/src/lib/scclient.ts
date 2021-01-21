@@ -1,23 +1,27 @@
 import WebTorrent from 'webtorrent';
-import {ExTorrent} from '../lib/extorrent'
+import {ExTorrent, ExtorrentOpts} from '../lib/extorrent'
+import {logger} from '../lib/logger'
+// import {ut_control} from '../lib/ut_control'
+// import EventEmitter from 'eventemitter3';
 
 // State Channel Client
 export class SCClient {
   webtorrent: WebTorrent
+  extorrent_opts: ExtorrentOpts
 
-  constructor(webtorrent: WebTorrent) {
+  constructor(webtorrent: WebTorrent, extorrent_opts?: ExtorrentOpts) {
     this.webtorrent = webtorrent
+    this.extorrent_opts = extorrent_opts || {}
   }
 
   seed(input, opts, onseed): ExTorrent {
-    console.log('SCClient seed')
-    const extor = new ExTorrent(this.webtorrent.seed(input, opts, onseed))
-    return extor
+    logger.info('SCClient seed')
+    return new ExTorrent(this.webtorrent.seed(input, opts, onseed), this.extorrent_opts)
   }
 
   add(torrentId, opts = {}, ontorrent = () => {}): ExTorrent {
-    console.log('SCClient add')
-    const extor = new ExTorrent(this.webtorrent.add(torrentId, opts, ontorrent))
-    return extor
+    logger.info('SCClient add')
+    return new ExTorrent(this.webtorrent.add(torrentId, opts, ontorrent))
   }
+  
 }

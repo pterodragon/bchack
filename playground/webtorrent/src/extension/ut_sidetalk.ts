@@ -1,46 +1,73 @@
-import {Extension, Wire} from 'bittorrent-protocol';
-import EventEmitter from 'eventemitter3';
+import {Extension, Wire} from 'bittorrent-protocol'
+import EventEmitter from 'eventemitter3'
+import {logger} from '../lib/logger'
+
+
+export interface ut_sidetalk_opts {
+  is_seeder?: boolean
+  is_leecher?: boolean
+}
+
 
 export class ut_sidetalk extends EventEmitter implements Extension {
   name: string = "ut_sidetalk"
-  private wire: Wire;
+  private wire: Wire
+  private _wire_paused: boolean = false
 
-  constructor(wire: Wire) {
+  get wire_paused(): boolean {
+    return this._wire_paused
+  }
+  set wire_paused(b: boolean) {
+    this._wire_paused = b
+  }
+
+  constructor(wire: Wire, opts?: ut_sidetalk_opts) {
     super()
     this.wire = wire
-    this.wire.on('handshake', (...args) => {console.log('ztest7')})
-    this.wire.on('choke', (...args) => {console.log('ztest6')})
-    this.wire.on('interested', (...args) => {this.send('ztest10', {'ztest10': 'ztest10'})})
-    // this.wire.on('have', (...args) => {console.log('ztest4')})
-    // this.wire.on('request', (...args) => {console.log('ztest3')})
-    this.wire.on('extended', (...args) => {console.log('ztest2')})
-    // this.wire.extendedMapping
+    this.wire.on('handshake', (...args) => {
+      logger.debug('handshake')
+    })
+    this.wire.on('choke', (...args) => {
+      logger.debug('choke')
+    })
+    this.wire.on('interested', (...args) => {
+      logger.debug('interested')
+      this.send('ztest10', {'ztest10': 'ztest10'})
+    })
+    this.wire.on('request', (...args) => {
+      logger.debug('request')
+    })
+    this.wire.on('extended', (ext, buf) => {
+      logger.debug('extended')
+    })
+    this.wire.on('piece', (...args) => {
+      logger.debug('piece')
+    })
   }
 
   onHandshake(infoHash, peerId, extensions) {
-    console.log('ut_sidetalk extension onHandshake')
+    logger.info('ut_sidetalk onHandshake')
   }
 
   onExtendedHandshake(handshake) {
-    console.log('ut_sidetalk extension onExtendedHandshake')
+    logger.info('ut_sidetalk onExtendedHandshake')
   }
 
   onMessage(buf: Buffer): void {
-    console.log('ut_sidetalk extension onMessage')
-    const msg = JSON.parse(buf.toString());
+    const msg = JSON.parse(buf.toString())
+    logger.debug('ut_sidetalk onMessage: %o', msg)
     if (msg.tag) {
       this.emit(msg.tag, this.wire, msg.payload)
     }
   }
 
   send(tag: string, value: object): void {
-    console.log('ut_sidetalk extension send')
-    const buf = Buffer.from(JSON.stringify(value));
-    this.wire.extended(this.name, buf);
+    logger.debug('ut_sidetalk send (%s, %o)', tag, value)
+    const buf = Buffer.from(JSON.stringify(value))
+    this.wire.extended(this.name, buf)
   }
 
-  _onPiece(index: number, offset: number, buffer: Buffer) {
-    console.log('ut_sidetalk _onPiece', index, offset, buffer)
+  set_opts(opts: ut_sidetalk_opts): void {
   }
 }
 
