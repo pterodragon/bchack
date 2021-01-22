@@ -6,7 +6,6 @@ import {logger} from '../lib/logger'
 
 dotenv.config()
 
-
 async function main() {
   const filepath = process.env.SEED_FILEPATH;
 

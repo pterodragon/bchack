@@ -1,4 +1,5 @@
 import {Wire} from 'bittorrent-protocol';
+import {ExTorrent} from '../lib/extorrent'
 
 /**
  * Ideally this is a singleton to control the choking status of all connections
@@ -58,6 +59,7 @@ export interface ut_control {
 
   /**
    * When a transaction is completed, call this function to unchoke the peer
+   * @param torrent
    * @param wire 
    * @param piece_count The number of pieces allowed to be downloaded
    */

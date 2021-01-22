@@ -37,6 +37,11 @@ export class ut_sidetalk extends EventEmitter implements Extension {
 
   _set_pause_status() {
     this.wire_paused = this._allowed_pieces <= 0
+    if (this.wire_paused) {
+      this.wire.choke()
+    } else {
+      this.wire._unchoke_orig()
+    }
   }
 
   set_cbs(scclient: SCClient, torrent: ExTorrent) : void {
@@ -45,7 +50,18 @@ export class ut_sidetalk extends EventEmitter implements Extension {
     })
     this.wire.on('choke', () => {
     })
+    this.wire.on('timeout', () => {
+      scclient._onTorrentEvent(torrent, this.wire, 'timeout')
+    })
+    this.wire.on('close', () => {
+      scclient._onTorrentEvent(torrent, this.wire, 'close')
+    })
+    this.wire.on('have', () => {
+      scclient._onTorrentEvent(torrent, this.wire, 'have')
+    })
     this.wire.on('upload', (buf_len) => {
+      // served a piece
+      this.consume_pieces(1)
       scclient._onTorrentEvent(torrent, this.wire, 'upload', buf_len)
     })
     this.wire.on('interested', () => {
@@ -60,8 +76,7 @@ export class ut_sidetalk extends EventEmitter implements Extension {
     this.wire.on('extended', (ext, buf) => {
     })
     this.wire.on('piece', (index, offset, buffer) => {
-      // served a piece
-      scclient._onTorrentEvent(torrent, this.wire, 'piece', index, offset, buffer)
+      scclient._onTorrentEvent(torrent, this.wire, 'piece', index, offset)
     })
   }
 
@@ -83,6 +98,10 @@ export class ut_sidetalk extends EventEmitter implements Extension {
     logger.debug('ut_sidetalk onMessage: %o', msg)
     if (msg.tag) {
       this.emit(msg.tag, this.wire, msg.payload)
+      if (msg.tag == 'topup') {
+        logger.info('topping up')
+        this.topup_pieces(5)
+      }
     }
   }
 

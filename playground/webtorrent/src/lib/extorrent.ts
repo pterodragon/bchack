@@ -23,6 +23,7 @@ export class ExTorrent {
       logger.info('ready Torrent %s', torrent.magnetURI)
     })
     this.torrent.on('wire', (wire: Wire, addr) => {
+      wire.setTimeout(86400000)
       wire.use(ut_sidetalk)
       wire.ut_sidetalk.ut_sidetalk_opts = opts?.ut_sidetalk_opts
       wire.ut_sidetalk.set_cbs(this.client, this)
@@ -33,15 +34,28 @@ export class ExTorrent {
       }
 
       // wraps unchoking
-      const unchoke = wire.unchoke
-      wire._unchoke_orig = unchoke
+      const _unchoke = wire.unchoke
+      wire._unchoke_orig = _unchoke
       wire.unchoke = () => {
         if (wire.ut_sidetalk.wire_paused) {
-          wire.ut_sidetalk.send('notice', {'msg': 'pay up!'})
+          wire.ut_sidetalk.send('notice', {'msg': 'unchoke denied: pay up!'})
         } else {
           wire._unchoke_orig()
         }
       }
+
+      // wraps piece
+      const _piece = wire.piece
+      wire._piece_orig = _piece
+      wire.piece = (index, offset, buffer) => {
+        if (wire.ut_sidetalk.wire_paused) {
+          wire.ut_sidetalk.send('notice', {'msg': 'piece denied: pay up!'})
+        } else {
+          wire._piece_orig(index, offset, buffer)
+        }
+      }
+
+      scclient._onTorrentEvent(this, wire, 'wire', addr)
     })
   }
 }

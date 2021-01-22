@@ -6,8 +6,7 @@ import {Wire} from 'bittorrent-protocol';
 import EventEmitter from 'eventemitter3'
 
 // State Channel Client
-// export class SCClient implements ut_control {
-export class SCClient extends EventEmitter {
+export class SCClient extends EventEmitter implements ut_control {
   webtorrent: WebTorrent
   extorrent_opts: ExtorrentOpts
 
@@ -28,12 +27,29 @@ export class SCClient extends EventEmitter {
   }
 
   _onTorrentEvent(torrent: ExTorrent, wire: Wire, event: string, ...args) : void {
-    logger.info('_onTorrentEvent %s, %s, %o', (torrent.torrent.infoHash), event, args)
-    if (['uninterested', 'interested', 'upload', 'piece'].includes(event)) {
+    logger.debug('_onTorrentEvent %s, %s, %o', (torrent.torrent.infoHash), event, args)
+    if (['uninterested', 'interested', 'upload', 'piece', 'wire', 'close'].includes(event)) {
+      switch (event) {
+        case 'close':
+          this.emit('disconnected', wire)
+          break
+        case 'wire':
+          this.emit('established', wire)
+          break
+        case 'interested':
+          this.emit('peer-interested', wire)
+          break
+        case 'uninterested':
+          this.emit('peer-uninterested', wire)
+          break
+        default:
+          break
+      }
       this.emit(event, torrent, wire)
     }
   }
 
-  allow(torrent: ExTorrent, wire: Wire, piece_count: number): void {
+  allow(wire: Wire, piece_count: number): void {
+    wire.ut_sidetalk.topup_pieces(piece_count)
   }
 }
