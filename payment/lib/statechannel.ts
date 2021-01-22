@@ -15,15 +15,37 @@ export class StateChannel {
   private readonly nitroAdjudicator: ethers.Contract;
   private readonly ethAssetHolder: ethers.Contract;
   private expectedHeld = BigNumber.from(0);
-  public signed: SignedState;
-  public readonly channelId: string;
+  private _channelId: string;
 
-  constructor(
+  public signed: SignedState;
+  public get channelId() { return this._channelId; }
+
+  static createFromScratch(
+    wallet: Wallet,
     chainId: string,
     participants: string[],
-    private readonly wallet: Wallet,
-  ) {
-    this.nitroAdjudicator = new ethers.Contract(
+  ): StateChannel {
+    const instance = new StateChannel(wallet);
+    const channel = createChannel(chainId, participants);
+    instance._channelId = getChannelId(channel);
+    instance.signed.state = createState(channel);
+    return instance;
+  }
+
+  static createFromState(
+    wallet: Wallet,
+    channelId: string,
+    signed: SignedState
+  ): StateChannel {
+    const instance = new StateChannel(wallet);
+    instance._channelId = channelId;
+    instance.update(signed);
+    return instance;
+  }
+
+  private constructor(
+    private readonly wallet: Wallet
+  ) { this.nitroAdjudicator = new ethers.Contract(
       nitro.NITRO_ADJUDICATOR_ADDRESS,
       ContractArtifacts.NitroAdjudicatorArtifact.abi,
       wallet.getConstractSigner()
@@ -34,9 +56,6 @@ export class StateChannel {
       wallet.getConstractSigner()
     );
 
-    const channel = createChannel(chainId, [...participants, wallet.getAddress()]);
-    this.channelId = getChannelId(channel);
-    this.signed.state = createState(channel);
   }
 
   get state(): State {

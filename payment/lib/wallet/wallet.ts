@@ -7,5 +7,6 @@ export declare interface Wallet {
   getAddress(): string;
   getMessageSigner(): Signer
   getConstractSigner(): Signer
-  getWeb3Provider(): ethers.providers.Web3Provider; 
+  getProvider(): ethers.providers.BaseProvider; 
 }
+

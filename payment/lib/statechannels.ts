@@ -9,21 +9,18 @@ import {Wallet} from './wallet';
 import {StateChannel} from './statechannel';
 
 
-declare type Shake = {
-  channelId?: string;
-  signed?: SignedState;
-};
 
 declare type Payload = {
   from: string,
   type: 'handshake' | 'request' | 'transfer' | 'finalize';
-  content: Shake | SignedState;
+  channelId?: string;
+  signed?: SignedState;
 };
 
 /**
  * only support two participants and single directional transfer for now
  */
-export class StateChannelsPayment extends EventEmitter implements PaymentInterface<Payload, Shake> {
+export class StateChannelsPayment extends EventEmitter implements PaymentInterface<Payload> {
 
   private _channels = new Map<string, StateChannel>();
 
@@ -39,33 +36,43 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
   }
 
 
-  async handshake(shake?:Shake): Promise<Payload> {
-    if (shake) {
-      const {address} = this;
-      const statechannel = new StateChannel(this._chainId, [address], this._wallet);
-      this._channels.set(address, statechannel);
-
-      //const amount = parseUnits("1000000", "gwei").toHexString();
-      //statechannel.deposit(amount);
-      const { signed, channelId } = statechannel;
-      shake = { ...shake, signed, channelId };
-    } 
+  async handshake(address?: string): Promise<Payload> {
+    if (address) {
+      return this.handshakeBack(address);
+    }
     return { 
       from: this._wallet.getAddress(),
       type: 'handshake',
-      content: shake 
     };
   }
 
-  received({from, type, content} : Payload) {
+  async handshakeBack(dest: string): Promise<Payload> {
+    const statechannel = StateChannel.createFromScratch(this._wallet, this._chainId, [dest, this._wallet.getAddress()]);
+    this._channels.set(dest, statechannel);
+
+    //const amount = parseUnits("1000000", "gwei").toHexString();
+    //statechannel.deposit(amount);
+    const { signed, channelId } = statechannel;
+    return { 
+      from: this._wallet.getAddress(),
+      type: 'handshake',
+      channelId ,
+      signed
+    };
+  }
+
+  received({from, type, signed, channelId} : Payload) {
     switch(type) {
       case 'handshake': {
-        const shake = content as Shake;
-        return this.emit("handshake", from, shake);
+        if (channelId && signed) {
+          const statechannel = StateChannel.createFromState(this._wallet, channelId, signed);
+          this._channels.set(from, statechannel);
+          return;
+        }
+        return this.emit("handshake", from);
       }
 
       case 'request': {
-        const signed = content as SignedState;
         const statechannel = this.getChannel(from);
         statechannel.update(signed);
 
@@ -75,13 +82,12 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
         const response = async() => ({ 
           from: address,
           type: 'transfer',
-          content: await sign(this._wallet.getMessageSigner(), signed.state) 
+          signed: await sign(this._wallet.getMessageSigner(), signed.state) 
         });
         return this.emit("requested", from, amount, response);
       }
 
       case 'transfer': {
-        const signed = content as SignedState;
         const statechannel = this.getChannel(from);
         statechannel.update(signed);
 
@@ -90,7 +96,6 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
       }
 
       case 'finalize': {
-        const signed = content as SignedState;
         const statechannel = this.getChannel(from);
         statechannel.conclude(signed);
       }
@@ -103,7 +108,7 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
     return {
       from: this.address,
       type: 'request',
-      content: await statechannel.payout(address, amount),
+      signed: await statechannel.payout(address, amount),
     }
   }
 
@@ -114,7 +119,7 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
     return {
       from: this.address,
       type: 'request',
-      content: await statechannel.requestConclude()
+      signed: await statechannel.requestConclude()
     }
   }
 

@@ -39,7 +39,7 @@ export class MetamaskWallet extends EventEmitter implements Wallet {
     return this._signer;
   }
 
-  getWeb3Provider(): ethers.providers.Web3Provider {
+  getProvider(): ethers.providers.BaseProvider {
     return this._provider;
   }
 

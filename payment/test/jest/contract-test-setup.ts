@@ -14,7 +14,6 @@ export default async function globalSetup() {
 
   const deployedArtifacts = await deploy();
   console.log(deployedArtifacts);
-
   process.env = { ...process.env, ...deployedArtifacts };
 
   if (
