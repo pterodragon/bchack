@@ -31,7 +31,7 @@ export function createChannel(chainId: string, participants: string[]): Channel 
   };
 }
 
-export function createState(channel: Channel, participants: string[], challengeDuration=10): State {
+export function createState(channel: Channel, challengeDuration=10): State {
   return {
     turnNum: 0,
     isFinal: false,
