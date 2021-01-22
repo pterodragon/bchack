@@ -106,9 +106,9 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
     }
   }
 
-  async finalize(address: string, remain: BigNumber): Promise<Payload> {
+  async finalize(address: string): Promise<Payload> {
     const statechannel = this.getChannel(address);
-    const signed = await statechannel.payout(this.address, remain);
+    const signed = await statechannel.payout(this.address, statechannel.remain);
     statechannel.update(signed);
     return {
       from: this.address,

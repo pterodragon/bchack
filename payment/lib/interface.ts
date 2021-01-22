@@ -16,7 +16,7 @@ export declare interface PaymentInterface<Payload, Shake> {
   received(payload: Payload): void;
   handshake(address: string, shake?:Shake): Promise<Payload>;
   request(address: string, amount: BigNumber): Promise<Payload>;
-  finalize(address: string, remain: BigNumber): Promise<Payload>
+  finalize(address: string): Promise<Payload>
   //hasCredit(address: string, amount: string): Promise<boolean>;
 }
 

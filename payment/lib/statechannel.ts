@@ -43,6 +43,10 @@ export class StateChannel {
     return this.signed.state;
   }
 
+  get remain(): BigNumber {
+    return this.expectedHeld;
+  }
+
   update(signed: SignedState): void {
     this.signed = signed;
   }
@@ -55,6 +59,9 @@ export class StateChannel {
   async payout(address: string, value: BigNumber): Promise<SignedState> {
     const signer = this.wallet.getMessageSigner();
     this.signed = await nitro.transfer(signer, this.state, address, value);
+    if (address !== this.wallet.getAddress()) {
+      this.expectedHeld = this.expectedHeld.sub(value);
+    }
     return this.signed;
   }
 
