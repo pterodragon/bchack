@@ -1,6 +1,8 @@
 import {Extension, Wire} from 'bittorrent-protocol'
+import {ExTorrent} from '../lib/extorrent'
 import EventEmitter from 'eventemitter3'
 import {logger} from '../lib/logger'
+import {SCClient} from '../lib/scclient'
 
 
 export interface ut_sidetalk_opts {
@@ -12,7 +14,9 @@ export interface ut_sidetalk_opts {
 export class ut_sidetalk extends EventEmitter implements Extension {
   name: string = "ut_sidetalk"
   private wire: Wire
-  private _wire_paused: boolean = false
+  private _wire_paused = false
+  private _opts?: ut_sidetalk_opts
+  private _allowed_pieces = 0
 
   get wire_paused(): boolean {
     return this._wire_paused
@@ -21,28 +25,49 @@ export class ut_sidetalk extends EventEmitter implements Extension {
     this._wire_paused = b
   }
 
-  constructor(wire: Wire, opts?: ut_sidetalk_opts) {
-    super()
-    this.wire = wire
+  consume_pieces(n: number) {
+    this._allowed_pieces -= n
+    this._set_pause_status()
+  }
+
+  topup_pieces(n: number) {
+    this._allowed_pieces += n
+    this._set_pause_status()
+  }
+
+  _set_pause_status() {
+    this.wire_paused = this._allowed_pieces <= 0
+  }
+
+  set_cbs(scclient: SCClient, torrent: ExTorrent) : void {
     this.wire.on('handshake', (...args) => {
       logger.debug('handshake')
     })
-    this.wire.on('choke', (...args) => {
-      logger.debug('choke')
+    this.wire.on('choke', () => {
     })
-    this.wire.on('interested', (...args) => {
-      logger.debug('interested')
-      this.send('ztest10', {'ztest10': 'ztest10'})
+    this.wire.on('upload', (buf_len) => {
+      scclient._onTorrentEvent(torrent, this.wire, 'upload', buf_len)
     })
-    this.wire.on('request', (...args) => {
-      logger.debug('request')
+    this.wire.on('interested', () => {
+      scclient._onTorrentEvent(torrent, this.wire, 'interested')
+    })
+    this.wire.on('uninterested', () => {
+      scclient._onTorrentEvent(torrent, this.wire, 'uninterested')
+    })
+    this.wire.on('request', (index, offset, length, cb) => {
+      scclient._onTorrentEvent(torrent, this.wire, 'request', index, offset, length, cb)
     })
     this.wire.on('extended', (ext, buf) => {
-      logger.debug('extended')
     })
-    this.wire.on('piece', (...args) => {
-      logger.debug('piece')
+    this.wire.on('piece', (index, offset, buffer) => {
+      // served a piece
+      scclient._onTorrentEvent(torrent, this.wire, 'piece', index, offset, buffer)
     })
+  }
+
+  constructor(wire: Wire) {
+    super()
+    this.wire = wire
   }
 
   onHandshake(infoHash, peerId, extensions) {
@@ -62,12 +87,14 @@ export class ut_sidetalk extends EventEmitter implements Extension {
   }
 
   send(tag: string, value: object): void {
+    value['tag'] = tag
     logger.debug('ut_sidetalk send (%s, %o)', tag, value)
     const buf = Buffer.from(JSON.stringify(value))
     this.wire.extended(this.name, buf)
   }
 
-  set_opts(opts: ut_sidetalk_opts): void {
+  set ut_sidetalk_opts(opts: ut_sidetalk_opts) {
+    this._opts = opts
   }
 }
 

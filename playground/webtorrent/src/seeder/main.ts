@@ -24,8 +24,10 @@ async function main() {
       reject(err)
     }
   })
+  // const uri = torrent.torrent.magnetURI
   // console.log(client.dht.toJSON())
-  logger.info('Client is seeding');
+  // logger.info('Client is seeding: %s', uri);
+  logger.info('Client is seeding %o', torrent);
 }
 
 main();
