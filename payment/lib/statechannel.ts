@@ -7,7 +7,7 @@ import * as nitro from "./nitro";
 
 
 import {
-  ContractArtifacts, getChannelId, Channel, State, Outcome, AllocationAssetOutcome, SignedState,
+  ContractArtifacts, getChannelId, Channel, State, SignedState,
 } from "@statechannels/nitro-protocol";
 
 

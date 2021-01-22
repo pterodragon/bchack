@@ -1,6 +1,5 @@
 import { EventEmitter } from "events";
 import { ethers, Signer } from "ethers";
-import Portis from '@portis/web3';
 import { Wallet } from './wallet';
 
 declare global {
@@ -9,9 +8,7 @@ declare global {
 
 export class MetamaskWallet extends EventEmitter implements Wallet {
   _provider: ethers.providers.Web3Provider;
-  _csigner: Signer;
   _signer: Signer;
-  _portis: Portis;
   _address: string;
 
   constructor() {
@@ -20,7 +17,7 @@ export class MetamaskWallet extends EventEmitter implements Wallet {
     if (!window.ethereum) { throw new Error("metamask plugin is not installed"); }
     window.ethereum.enable().then(() => {
       const provider = this._provider = new ethers.providers.Web3Provider(window.ethereum);
-      this._signer = this._csigner = provider.getSigner();
+      this._signer = provider.getSigner();
       //@ts-ignore
       if (web3) {
         //@ts-ignore
@@ -32,7 +29,6 @@ export class MetamaskWallet extends EventEmitter implements Wallet {
   
 
   open(): void {
-    this._portis.showPortis();
   }
 
   getMessageSigner(): Signer {
@@ -40,7 +36,7 @@ export class MetamaskWallet extends EventEmitter implements Wallet {
   }
 
   getConstractSigner(): Signer {
-    return this._csigner;
+    return this._signer;
   }
 
   getWeb3Provider(): ethers.providers.Web3Provider {

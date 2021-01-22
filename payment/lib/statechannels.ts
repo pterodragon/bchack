@@ -1,4 +1,4 @@
-import EventEmitter from "events";
+import {EventEmitter} from 'events';
 import {utils, BigNumber} from "ethers";
 import {State, Channel, getChannelId, SignedState, AllocationAssetOutcome} from "@statechannels/nitro-protocol";
 import { sign } from './utils';
@@ -8,7 +8,6 @@ import {PaymentInterface} from "./interface";
 import {Wallet} from './wallet';
 import {StateChannel} from './statechannel';
 
-const { parseUnits } = utils;
 
 declare type Shake = {
   channelId?: string;
@@ -28,7 +27,10 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
 
   private _channels = new Map<string, StateChannel>();
 
-  constructor(private readonly _wallet: Wallet) {
+  constructor(
+    private readonly _wallet: Wallet,
+    private readonly _chainId: string = process.env.CHAIN_NETWORK_ID
+  ) {
     super();
   }
 
@@ -37,11 +39,10 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
   }
 
 
-  async handshake(address: string, shake?:Shake): Promise<Payload> {
+  async handshake(shake?:Shake): Promise<Payload> {
     if (shake) {
-      const chainId = process.env.DAPP_CHAIN_ID
-
-      const statechannel = new StateChannel(chainId, [address], this._wallet);
+      const {address} = this;
+      const statechannel = new StateChannel(this._chainId, [address], this._wallet);
       this._channels.set(address, statechannel);
 
       //const amount = parseUnits("1000000", "gwei").toHexString();

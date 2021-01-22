@@ -4,8 +4,8 @@ import { State, signStates, Channel } from "@statechannels/nitro-protocol";
 const { AddressZero, HashZero } = ethers.constants;
 
 export async function sign(signer: Signer, state: State): Promise<Signature> {
-  //@ts-ignore: for the 2nd parameter of signStates, only wallet.signMessage is needed
   const wallet = signer as ethers.Wallet;
+  //@ts-ignore: for the 2nd parameter of signStates, only wallet.signMessage is needed
   const [signature] = await signStates([state], [wallet], [0]);
   return signature;
 }
