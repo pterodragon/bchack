@@ -25,8 +25,8 @@ function LinearProgressWithLabel({value, text}) {
 function Participant({address}) {
   return (
       <Chip
-        avatar={<Avatar>{address.substring(0,1).toUpperCase()}</Avatar>}
-        label={address.substring(0,6)}
+        avatar={<Avatar>{address.substring(2,3).toUpperCase()}</Avatar>}
+        label={address.substring(2,8)}
         color="primary"
         deleteIcon={<DoneIcon />}
         variant="outlined"
