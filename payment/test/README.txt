@@ -4,6 +4,7 @@ execute in the root folder of the module (ie. the payment directory):
 ```bash
 npm install
 npm run build  #optional
+ln -s .env .env.test #change the .env to use the test one
 npm run test
 ```
 
