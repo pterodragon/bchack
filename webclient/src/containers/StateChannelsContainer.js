@@ -5,7 +5,9 @@ import StateChannelsPanel from "../components/StateChannelsPannel.js"
 
 const mapStateToProps = (state, ownProps) => ({
   // ... computed data from state and optionally ownProps
-})
+  statechannels: state.statechannels
+});
+
 
 const mapDispatchToProps = {
   // ... normally is an object full of action creators
