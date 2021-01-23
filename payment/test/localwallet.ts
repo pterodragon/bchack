@@ -5,9 +5,9 @@ export class LocalWallet implements Wallet {
   private _provider: ethers.providers.BaseProvider;
   private _signer: Signer;
 
-  constructor(provider: ethers.providers.JsonRpcProvider) {
+  constructor(provider: ethers.providers.JsonRpcProvider, privateKey?: string) {
     this._provider = provider;
-    const wallet = ethers.Wallet.createRandom();
+    const wallet = privateKey || ethers.Wallet.createRandom();
     this._signer = new EthWallet(wallet, provider);
   }
 

@@ -2,7 +2,6 @@ import {EventEmitter} from 'events';
 import { BigNumber } from "ethers";
 import {State, SignedState, AllocationAssetOutcome} from "@statechannels/nitro-protocol";
 import { sign } from './utils';
-import { strict as assert } from 'assert'; 
 import {PaymentInterface} from "./interface";
 import {Wallet} from './wallet';
 import {StateChannel} from './statechannel';
@@ -69,22 +68,25 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
           if (!shake) throw new Error(`no handshakeId in handshake paylaod from ${from}`);
           const statechannel = StateChannel.createFromState(this._wallet, shake.channelId, signed);
           this._channels.set(from, statechannel);
-          return this.emit("handshakeBack", shake.handshakeId, from);
+          return this.emit("handshakeBack", from, shake.handshakeId);
         }
-        return this.emit("handshake", shake.handshakeId, from);
+        return this.emit("handshake", from, shake.handshakeId);
       }
 
       case 'request': {
         const statechannel = this.getChannel(from);
         statechannel.update(signed);
 
-        const address = await this._wallet.getAddress();
-        const {address: allocationAddress, amount} = extractLastAllocationItem(signed.state);
-        assert(address === allocationAddress);
+        const myaddress = await this._wallet.getAddress();
+        const {destination, amount} = extractLastAllocationItem(signed.state);
+        //assert(myaddress === destination, `address not match: ${myaddress} !== ${allocationAddress}`);
         const response = async() => ({ 
-          from: address,
+          from: myaddress,
           type: 'transfer',
-          signed: await sign(this._wallet.getMessageSigner(), signed.state) 
+          signed: {
+            state: signed.state,
+            signature: await sign(this._wallet.getMessageSigner(), signed.state) 
+          }
         });
         return this.emit("requested", from, amount, response);
       }
@@ -99,18 +101,20 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
 
       case 'finalize': {
         const statechannel = this.getChannel(from);
-        statechannel.conclude(signed);
+        const eventLog = await statechannel.conclude(signed);
+        return this.emit("finalized", from, eventLog);
       }
     }
   }
 
 
-  async request(address: string, amount: BigNumber): Promise<Payload> {
-    const statechannel = this.getChannel(address);
+  async request(fromAddress: string, amount: BigNumber): Promise<Payload> {
+    const statechannel = this.getChannel(fromAddress);
+    const myAddress = await this.address;
     return {
-      from: await this.address,
+      from: myAddress,
       type: 'request',
-      signed: await statechannel.payout(address, amount),
+      signed: await statechannel.payout(myAddress, amount),
     }
   }
 
@@ -121,7 +125,7 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
     statechannel.update(signed);
     return {
       from: myaddress,
-      type: 'request',
+      type: 'finalize',
       signed: await statechannel.requestConclude()
     }
   }
@@ -133,6 +137,7 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
       await statechannel.deposit(amount);
       return true;
     } catch(err) {
+      console.error(err);
       return false;
     }
   }
@@ -148,13 +153,15 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
 }  //end class StateChannelManager
 
 
-function extractLastAllocationItem(state: State) {
+//export for unit test
+export function extractLastAllocationItem(state: State) {
     const {outcome} = state;
     const allocation = outcome[outcome.length-1] as AllocationAssetOutcome;
     const {allocationItems} = allocation;
-    const address = allocation.assetHolderAddress;
-    const amount = BigNumber.from(allocationItems[allocationItems.length-1].amount);
-    return { address, amount }
+    const lastItem = allocationItems[allocationItems.length-1]
+    const {destination} = lastItem;
+    const amount = BigNumber.from(lastItem.amount);
+    return { destination, amount }
 }
 
 

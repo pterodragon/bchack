@@ -8,4 +8,5 @@ module.exports = {
   rootDir: ".",
   roots: ["<rootDir>/.."],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  verbose: true,
 };

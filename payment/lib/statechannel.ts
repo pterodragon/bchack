@@ -97,9 +97,9 @@ export class StateChannel {
   async conclude(signed: SignedState) {
     const { state } = this.signed = signed;
     const signer = this.wallet.getMessageSigner();
-    const signature = await sign(signer, state);
-    const event =  nitro.conclude(state, [signed.signature, signature]);
-    return nitro.lookupConclusion(event, [this.ethAssetHolder, this.nitroAdjudicator]);
+    const mysignature = await sign(signer, state);
+    const event = await nitro.conclude(this.nitroAdjudicator, state, [mysignature, signed.signature]);
+    return nitro.explainConclusion(event, [this.ethAssetHolder, this.nitroAdjudicator]);
   }
 
 }

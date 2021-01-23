@@ -38,7 +38,7 @@ export async function transfer(signer: Signer, state: State, address: string, va
 }
 
 
-export async function conclude(state: State, signatures: Signature[]) {
+export async function conclude(nitroAdjudicator: ethers.Contract, state: State, signatures: Signature[]) {
   /* Generate a finalization proof */
   const fixedPart = getFixedPart(state);
   const appPartHash = hashAppPart(state);
@@ -47,7 +47,7 @@ export async function conclude(state: State, signatures: Signature[]) {
   const whoSignedWhat = new Array(signatures.length).fill(0);
 
   //console.log({ state, fixedPart, appPartHash, outcomeBytes, numStates, whoSignedWhat, signatures });
-  const tx = this.nitroAdjudicator.concludePushOutcomeAndTransferAll(
+  const tx = nitroAdjudicator.concludePushOutcomeAndTransferAll(
     state.turnNum,
     fixedPart, appPartHash, outcomeBytes,
     numStates, whoSignedWhat, signatures
@@ -56,7 +56,7 @@ export async function conclude(state: State, signatures: Signature[]) {
   return await (await tx).wait();
 }
 
-export function lookupConclusion(result:any, contracts: ethers.Contract[]) {
+export function explainConclusion(result:any, contracts: ethers.Contract[]) {
   const {logs} = result;
   //const events = compileEventsFromLogs(logs, [ this.ethAssetHolder, this.nitroAdjudicator, ]);
   const events = compileEventsFromLogs(logs, contracts);
