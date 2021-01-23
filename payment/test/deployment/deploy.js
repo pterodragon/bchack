@@ -10,6 +10,7 @@ const {
 } = require("@statechannels/devtools");
 
 const deploy = async () => {
+  console.log(`deploy to port ${process.env.GANACHE_PORT} `);
   const deployer = new GanacheDeployer(
     Number(process.env.GANACHE_PORT),
     ETHERLIME_ACCOUNTS[0].privateKey

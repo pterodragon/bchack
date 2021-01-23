@@ -7,27 +7,31 @@ declare global {
 }
 
 export class MetamaskWallet extends EventEmitter implements Wallet {
-  _provider: ethers.providers.Web3Provider;
-  _signer: Signer;
-  _address: string;
+  private _provider: ethers.providers.Web3Provider;
+  private _signer: Signer;
+  private _address: Promise<string>;
 
   constructor() {
     super();
 
-    if (!window.ethereum) { throw new Error("metamask plugin is not installed"); }
-    window.ethereum.enable().then(() => {
+    if (!window.ethereum) { 
+      throw new Error("metamask plugin is not installed"); 
+    }
+    this._address = (async() => {
+      await window.ethereum.enable();
       const provider = this._provider = new ethers.providers.Web3Provider(window.ethereum);
       this._signer = provider.getSigner();
       //@ts-ignore
       if (web3) {
         //@ts-ignore
-        this._address = web3.eth.accounts[0];
-        this.emit("login", this._address);
+        const address = web3.eth.accounts[0];
+        this.emit("login", address);
+        return address;
       }
-    });
+    })();
+
   }
   
-
   open(): void {
   }
 
@@ -43,7 +47,7 @@ export class MetamaskWallet extends EventEmitter implements Wallet {
     return this._provider;
   }
 
-  getAddress(): string {
+  async getAddress(): Promise<string> {
     return this._address;
   }
 

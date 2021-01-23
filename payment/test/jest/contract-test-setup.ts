@@ -1,10 +1,8 @@
 import { GanacheServer, configureEnvVariables } from "@statechannels/devtools";
 import { deploy } from "../deployment/deploy";
 
-import dotenv from 'dotenv';
-dotenv.config({path: './.env'});
 
-export default async function globalSetup() {
+export default async function globalSetup2() {
   configureEnvVariables();
   const ganacheServer = new GanacheServer(
     Number(process.env.GANACHE_PORT),
@@ -36,3 +34,4 @@ export default async function globalSetup() {
 
   (global as any).__GANACHE_SERVER__ = ganacheServer;
 }
+

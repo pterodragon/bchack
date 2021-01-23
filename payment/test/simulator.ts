@@ -4,29 +4,27 @@ import { StateChannelsPayment } from "../lib/statechannels";
 import {LocalWallet} from "./localwallet";
 import globalSetup from "./jest/contract-test-setup";
 
-
 main();
 
 async function main() {
   await globalSetup();
 
   /* Set up an ethereum provider connected to our local blockchain */
+  const url = `http://localhost:${process.env.GANACHE_PORT}`
   const provider = new ethers.providers.JsonRpcProvider(
-    `http://localhost:${process.env.GANACHE_PORT}`
+    url
   );
 
   const seederWallet = new LocalWallet(provider);
-  await seederWallet.init();
   const seeder = new StateChannelsPayment(seederWallet);
   function sendToSeeder(payload: any) {
-    seeder.received(payload);
+    return seeder.received(payload);
   }
 
   const leecherWallet = new LocalWallet(provider);
-  await leecherWallet.init();
   const leecher = new StateChannelsPayment(leecherWallet);
   function sendToLeecher(payload: any) {
-    leecher.received(payload);
+    return leecher.received(payload);
   }
 
 
@@ -35,7 +33,7 @@ async function main() {
     console.log(`leecher received handeshake from ${from}`);
     //leecher handshake back
     const payload = await leecher.handshake(from);
-    sendToSeeder(payload);
+    await sendToSeeder(payload);
 
     //@ts-expect-error
     console.log(seeder.getChannel(leecherWallet.getAddress()).signed.state)
@@ -45,7 +43,7 @@ async function main() {
 
   //seeder wants to handshake with leecher to know his/her address
   const payload = await seeder.handshake();
-  sendToLeecher(payload);
-}
+  await sendToLeecher(payload);
 
+} 
 

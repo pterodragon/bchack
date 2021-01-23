@@ -28,7 +28,8 @@ export class StateChannel {
     const instance = new StateChannel(wallet);
     const channel = createChannel(chainId, participants);
     instance._channelId = getChannelId(channel);
-    instance.signed.state = createState(channel);
+    //@ts-expect-error
+    instance.signed = { state: createState(channel) };
     return instance;
   }
 
@@ -43,9 +44,8 @@ export class StateChannel {
     return instance;
   }
 
-  private constructor(
-    private readonly wallet: Wallet
-  ) { this.nitroAdjudicator = new ethers.Contract(
+  private constructor( private readonly wallet: Wallet) { 
+    this.nitroAdjudicator = new ethers.Contract(
       nitro.NITRO_ADJUDICATOR_ADDRESS,
       ContractArtifacts.NitroAdjudicatorArtifact.abi,
       wallet.getConstractSigner()
@@ -55,7 +55,6 @@ export class StateChannel {
       ContractArtifacts.EthAssetHolderArtifact.abi,
       wallet.getConstractSigner()
     );
-
   }
 
   get state(): State {
@@ -78,7 +77,7 @@ export class StateChannel {
   async payout(address: string, value: BigNumber): Promise<SignedState> {
     const signer = this.wallet.getMessageSigner();
     this.signed = await nitro.transfer(signer, this.state, address, value);
-    if (address !== this.wallet.getAddress()) {
+    if (address !== await this.wallet.getAddress()) {
       this.expectedHeld = this.expectedHeld.sub(value);
     }
     return this.signed;

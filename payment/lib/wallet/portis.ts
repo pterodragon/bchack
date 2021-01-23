@@ -4,11 +4,11 @@ import Portis from '@portis/web3';
 import { Wallet } from './wallet';
 
 export class PortisWallet extends EventEmitter implements Wallet {
-  _provider: ethers.providers.Web3Provider;
-  _csigner: Signer;
-  _signer: Signer;
-  _portis: Portis;
-  _address: string;
+  private _provider: ethers.providers.Web3Provider;
+  private _csigner: Signer;
+  private _signer: Signer;
+  private _portis: Portis;
+  private _address: Promise<string>;
 
   constructor(dappAddress: string, network: string) {
     super();
@@ -17,11 +17,12 @@ export class PortisWallet extends EventEmitter implements Wallet {
     this._csigner = this._provider.getSigner();
     //@ts-ignore
     this._signer = new PortisEthSigner(this._csigner);
-    
-    portis.onLogin((walletAddress) => {
-      this._address = walletAddress;
-      this.emit("login", walletAddress);
-    });
+    this._address = new Promise(resolv=>
+      portis.onLogin((walletAddress) => {
+        this.emit("login", walletAddress);
+        resolv(walletAddress);
+      })
+    );
   }
   
 
@@ -41,7 +42,7 @@ export class PortisWallet extends EventEmitter implements Wallet {
     return this._provider;
   }
 
-  getAddress(): string {
+  getAddress(): Promise<string> {
     return this._address;
   }
 }

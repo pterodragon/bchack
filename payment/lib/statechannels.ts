@@ -1,9 +1,8 @@
 import {EventEmitter} from 'events';
-import {utils, BigNumber} from "ethers";
-import {State, Channel, getChannelId, SignedState, AllocationAssetOutcome} from "@statechannels/nitro-protocol";
+import { BigNumber } from "ethers";
+import {State, SignedState, AllocationAssetOutcome} from "@statechannels/nitro-protocol";
 import { sign } from './utils';
-import { strict as assert } from 'assert';
-
+import { strict as assert } from 'assert'; 
 import {PaymentInterface} from "./interface";
 import {Wallet} from './wallet';
 import {StateChannel} from './statechannel';
@@ -13,8 +12,8 @@ import {StateChannel} from './statechannel';
 declare type Payload = {
   from: string,
   type: 'handshake' | 'request' | 'transfer' | 'finalize';
-  channelId?: string;
   signed?: SignedState;
+  shake?: {handshakeId:string, channelId?:string},
 };
 
 /**
@@ -36,47 +35,50 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
   }
 
 
-  async handshake(address?: string): Promise<Payload> {
+  async handshake(handshakeId: string, address?: string): Promise<Payload> {
     if (address) {
-      return this.handshakeBack(address);
+      return this.handshakeBack(handshakeId, address);
     }
     return { 
-      from: this._wallet.getAddress(),
+      from: await this.address,
       type: 'handshake',
+      shake: {handshakeId}
     };
   }
 
-  async handshakeBack(dest: string): Promise<Payload> {
-    const statechannel = StateChannel.createFromScratch(this._wallet, this._chainId, [dest, this._wallet.getAddress()]);
+  private async handshakeBack(handshakeId: string, dest: string): Promise<Payload> {
+    const myaddress = await this.address;
+    const statechannel = StateChannel.createFromScratch(this._wallet, this._chainId, [dest, myaddress]);
     this._channels.set(dest, statechannel);
 
     //const amount = parseUnits("1000000", "gwei").toHexString();
     //statechannel.deposit(amount);
     const { signed, channelId } = statechannel;
     return { 
-      from: this._wallet.getAddress(),
+      from: myaddress,
       type: 'handshake',
-      channelId ,
+      shake: {handshakeId, channelId},
       signed
     };
   }
 
-  received({from, type, signed, channelId} : Payload) {
+  async received({from, type, signed, shake} : Payload) {
     switch(type) {
       case 'handshake': {
-        if (channelId && signed) {
-          const statechannel = StateChannel.createFromState(this._wallet, channelId, signed);
+        if (signed) {
+          if (!shake) throw new Error(`no handshakeId in handshake paylaod from ${from}`);
+          const statechannel = StateChannel.createFromState(this._wallet, shake.channelId, signed);
           this._channels.set(from, statechannel);
-          return;
+          return this.emit("handshakeBack", shake.handshakeId, from);
         }
-        return this.emit("handshake", from);
+        return this.emit("handshake", shake.handshakeId, from);
       }
 
       case 'request': {
         const statechannel = this.getChannel(from);
         statechannel.update(signed);
 
-        const address = this._wallet.getAddress();
+        const address = await this._wallet.getAddress();
         const {address: allocationAddress, amount} = extractLastAllocationItem(signed.state);
         assert(address === allocationAddress);
         const response = async() => ({ 
@@ -106,18 +108,19 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
   async request(address: string, amount: BigNumber): Promise<Payload> {
     const statechannel = this.getChannel(address);
     return {
-      from: this.address,
+      from: await this.address,
       type: 'request',
       signed: await statechannel.payout(address, amount),
     }
   }
 
   async finalize(address: string): Promise<Payload> {
+    const myaddress = await this.address;
     const statechannel = this.getChannel(address);
-    const signed = await statechannel.payout(this.address, statechannel.remain);
+    const signed = await statechannel.payout(myaddress, statechannel.remain);
     statechannel.update(signed);
     return {
-      from: this.address,
+      from: myaddress,
       type: 'request',
       signed: await statechannel.requestConclude()
     }
@@ -135,7 +138,8 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
   }
   
 
-  private getChannel(address: string) {
+  //public for unit testing
+  getChannel(address: string) {
     const channel = this._channels.get(address);
     if (!channel) throw new Error(`channel of address ${address} not found`);
     return channel;

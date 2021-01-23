@@ -2,4 +2,5 @@ yarn.lock
 node_modules
 dist
 .etherlime-store
+.env
 
