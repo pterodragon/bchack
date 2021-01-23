@@ -144,7 +144,7 @@ describe("test statechannel payment", function() {
       done();
     })
 
-    //leecher asks for conclusion of the channel with seeder
+    //1. leecher asks for conclusion of the channel with seeder
     //--------------------------------------------------
     const payload = await leecher.finalize(seederAddress);
     await sendToSeeder(payload);
