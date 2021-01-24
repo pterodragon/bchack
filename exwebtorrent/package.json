@@ -1,14 +1,13 @@
 {
-  "name": "poc",
+  "name": "exwebtorrent",
   "version": "1.0.0",
   "description": "",
-  "main": "src/app.js",
   "scripts": {
-    "build": "babel --source-maps -d dist/ src",
-    "watch": "babel --watch --source-maps -d dist/ src",
-    "start-seeder": "nodemon src/seeder/main.ts",
-    "start-leecher": "nodemon src/leecher/main.ts",
-    "debug-seeder": "node --inspect-brk --require ts-node/register src/seeder/main.ts"
+    "build": "babel --source-maps -d dist/ .",
+    "watch": "babel --watch --source-maps -d dist/ .",
+    "start-seeder": "nodemon ./seeder/main.ts",
+    "start-leecher": "nodemon ./leecher/main.ts",
+    "debug-seeder": "node --inspect-brk --require ts-node/register ./seeder/main.ts"
   },
   "dependencies": {
     "bitfield": "^4.0.0",
