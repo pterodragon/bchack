@@ -10,7 +10,7 @@ import {StateChannel} from './statechannel';
 
 declare type Payload = {
   from: string,
-  type: 'handshake' | 'request' | 'transfer' | 'finalize';
+  type: 'handshake' | 'deposit' | 'request' | 'transfer' | 'finalize';
   signed?: SignedState;
   shake?: {handshakeId:string, channelId?:string},
 };
@@ -49,10 +49,11 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
     const myaddress = await this.address;
     const statechannel = StateChannel.createFromScratch(this._wallet, this._chainId, [dest, myaddress]);
     this._channels.set(dest, statechannel);
+    const signed = statechannel.getSignedState(myaddress);
 
     //const amount = parseUnits("1000000", "gwei").toHexString();
     //statechannel.deposit(amount);
-    const { signed, channelId } = statechannel;
+    const { channelId } = statechannel;
     return { 
       from: myaddress,
       type: 'handshake',
@@ -66,21 +67,27 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
       case 'handshake': {
         if (signed) {
           if (!shake) throw new Error(`no handshakeId in handshake paylaod from ${from}`);
-          const statechannel = StateChannel.createFromState(this._wallet, shake.channelId, signed);
+          const statechannel = StateChannel.createFromState(this._wallet, shake.channelId, from, signed);
           this._channels.set(from, statechannel);
           return this.emit("handshakeBack", from, shake.handshakeId);
         }
         return this.emit("handshake", from, shake.handshakeId);
       }
 
+      case 'deposit': {
+        const statechannel = this.getChannel(from);
+        statechannel.update(from, signed);
+        return this.emit("requested", from, amount, response);
+      }
+
       case 'request': {
         const statechannel = this.getChannel(from);
-        statechannel.update(signed);
+        statechannel.update(from, signed);
 
         const myaddress = await this._wallet.getAddress();
         const {destination, amount} = extractLastAllocationItem(signed.state);
         //assert(myaddress === destination, `address not match: ${myaddress} !== ${allocationAddress}`);
-        const response = async() => ({ 
+        const response = async() => ({
           from: myaddress,
           type: 'transfer',
           signed: {
@@ -93,14 +100,15 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
 
       case 'transfer': {
         const statechannel = this.getChannel(from);
-        statechannel.update(signed);
-
-        const { amount } = extractLastAllocationItem(signed.state);
+        statechannel.update(from, signed);
+const { amount } = extractLastAllocationItem(signed.state);
         return this.emit("received", from, amount);
       }
 
       case 'finalize': {
         const statechannel = this.getChannel(from);
+        statechannel.update(from, signed);
+
         const eventLog = await statechannel.conclude(signed);
         return this.emit("finalized", from, eventLog);
       }
@@ -121,8 +129,6 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
   async finalize(address: string): Promise<Payload> {
     const myaddress = await this.address;
     const statechannel = this.getChannel(address);
-    const signed = await statechannel.payout(myaddress, statechannel.remain);
-    statechannel.update(signed);
     return {
       from: myaddress,
       type: 'finalize',
@@ -131,15 +137,14 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
   }
 
 
-  async deposit(address: string, amount: BigNumber): Promise<boolean> {
-    try {
-      const statechannel = this.getChannel(address);
-      await statechannel.deposit(amount);
-      return true;
-    } catch(err) {
-      console.error(err);
-      return false;
-    }
+  async deposit(address: string, amount: BigNumber): Promise<Payload> {
+    const myaddress = await this.address;
+    const statechannel = this.getChannel(address);
+    return {
+      from: myaddress,
+      type: 'deposit',
+      signed: await statechannel.deposit(amount)
+    };
   }
   
 

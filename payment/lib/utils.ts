@@ -1,6 +1,9 @@
 import { Signature, BigNumber } from "ethers";
 import { ethers, Signer } from "ethers"
-import { State, signStates, Channel } from "@statechannels/nitro-protocol";
+import { 
+  State, signStates, Channel,
+  AllocationAssetOutcome, AllocationItem,
+} from "@statechannels/nitro-protocol";
 const { AddressZero, HashZero } = ethers.constants;
 
 export async function sign(signer: Signer, state: State): Promise<Signature> {
@@ -42,3 +45,49 @@ export function createState(channel: Channel, challengeDuration=10): State {
     challengeDuration
   };
 }
+
+
+class OutcomesMap extends Map<string, Map<string, BigNumber>> {
+  add(assetHolderAddress: string, destination: string, amount: any) {
+    let map = super.get(assetHolderAddress);
+    if (!map) {
+      map = new Map();
+      super.set(assetHolderAddress, map);
+    }
+    const value = BigNumber.from(amount);
+    let balance = map.get(destination);
+    map.set(destination, balance ? balance.add(value) : value);
+    return this;
+  }
+
+  sub(assetHolderAddress: string, destination: string, amount: any) {
+    let map = super.get(assetHolderAddress);
+    if (!map) {
+      map = new Map();
+      super.set(assetHolderAddress, map);
+    }
+    const value = BigNumber.from(amount);
+    let balance = map.get(destination);
+    map.set(destination, balance ? balance.sub(value) : value.mul(BigNumber.from(-1)));
+    return this;
+  }
+
+  toOutcome(): AllocationAssetOutcome[] {
+    const ret: AllocationAssetOutcome[] = [];
+    for (const [assetHolderAddress, m] of this) {
+      const allocationItems = Array.from(m).map(([destination, amount])=>({destination, amount: amount.toHexString()}))
+      ret.push({assetHolderAddress, allocationItems});
+    }
+    return ret;
+  }
+};
+
+export function outcomesToMap(outcomes: AllocationAssetOutcome[]): OutcomesMap {
+  return outcomes.reduce((ret, {assetHolderAddress,allocationItems}) => {
+    allocationItems.forEach(({destination, amount}) =>
+      ret.add(assetHolderAddress, destination, amount)
+    );
+    return ret;
+  }, new OutcomesMap() );
+}
+

@@ -14,11 +14,10 @@ import {
 export class StateChannel {
   private readonly nitroAdjudicator: ethers.Contract;
   private readonly ethAssetHolder: ethers.Contract;
-  private expectedHeld = BigNumber.from(0);
+  private _holdings = BigNumber.from(0);
   private _channelId: string;
-
-  public signed: SignedState;
-  public get channelId() { return this._channelId; }
+  //mapping between participants(publickey) and their latest signed state
+  private _signedStates = new Map<string, SignedState>();
 
   static createFromScratch(
     wallet: Wallet,
@@ -36,11 +35,12 @@ export class StateChannel {
   static createFromState(
     wallet: Wallet,
     channelId: string,
+    from: string,
     signed: SignedState
   ): StateChannel {
     const instance = new StateChannel(wallet);
     instance._channelId = channelId;
-    instance.update(signed);
+    instance.update(from, signed);
     return instance;
   }
 
@@ -57,34 +57,67 @@ export class StateChannel {
     );
   }
 
-  get state(): State {
-    return this.signed.state;
+  get channelId(): string { 
+    return this._channelId; 
   }
 
-  get remain(): BigNumber {
-    return this.expectedHeld;
+  get latestState(): State {
+    let maxTurnNum = -1;
+    let ret = undefined;
+    for (let [address, {state}] of this._signedStates) {
+      if (state.turnNum > maxTurnNum) {
+        maxTurnNum = state.turnNum;
+        ret = state;
+      }
+    }
+    return ret;
   }
 
-  update(signed: SignedState): void {
-    this.signed = signed;
+  getSignedState(whoSigned: string): SignedState {
+      const signed = this._signedStates.get(whoSigned);
+      if (!signed) throw new Error(`signed state of ${whoSigned} not found`);
+      return signed;
   }
 
-  async deposit(value: BigNumber) {
-    const { amountDeposited } = await nitro.deposit(this.ethAssetHolder, this.channelId, this.expectedHeld, value);
-    this.expectedHeld = amountDeposited;
+  get holdings(): BigNumber {
+    return this._holdings;
+  }
+
+  private get address(): Promise<string> {
+    return this.wallet.getAddress();
+  }
+
+  update(participant: string, signed: SignedState): SignedState {
+    this._signedStates.set(participant, signed);
+    return signed;
+  }
+
+  async deposit(value: BigNumber): Promise<SignedState> {
+    const { destinationHoldings } = await nitro.deposit(this.ethAssetHolder, this.channelId, this._holdings, value);
+    this._holdings = destinationHoldings;
+    const state = nitro.add(this.latestState, await this.address, value);
+
+    const signer = this.wallet.getMessageSigner();
+    const signature = await sign(signer, state);
+
+    const signed = { state, signature };
+    return this.update(await this.address, signed);
   }
 
   async payout(address: string, value: BigNumber): Promise<SignedState> {
+
+    let state = nitro.sub(this.latestState, await this.address, value);
+    state = nitro.add(state, address, value);
+
     const signer = this.wallet.getMessageSigner();
-    this.signed = await nitro.transfer(signer, this.state, address, value);
-    if (address !== await this.wallet.getAddress()) {
-      this.expectedHeld = this.expectedHeld.sub(value);
-    }
-    return this.signed;
+    const signature = await sign(signer, state);
+
+    const signed = { state, signature };
+    return this.update(await this.address, signed);
   }
 
   async requestConclude(): Promise<SignedState> {
-    const { state } = this;
+    const { latestState: state } = this;
     state.isFinal = true;
     state.turnNum += 1;
 
