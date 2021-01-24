@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  seeder:
+    container_name: bchack_seeder
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    volumes:
+      - ../:/app
+    command: "bash -c 'cd paid_webtorrent && npm run start-seeder'"
+    # network_mode: host
+    # environment:
+    #   DEBUG: '*'
+
+  leecher0:
+    container_name: bchack_leecher0
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    volumes:
+      - ../:/app
+    command: "bash -c 'cd paid_webtorrent && npm run start-leecher'"
+
+    # network_mode: host
+    # environment:
+    #   DEBUG: '*'
+
+    # leecher1:
+    #   container_name: bchack_leecher1
+    #   build:
+    #     context: ./
+    #     dockerfile: ./Dockerfile
+    #   volumes:
+    #     - ./:/app
+    #   command: "npm run start-leecher"
+    #   # environment:
+    #   #   DEBUG: '*'

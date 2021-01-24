@@ -10,7 +10,7 @@ async function main() {
   const filepath = process.env.SEED_FILEPATH;
 
   // using LSD
-  const client = new SCClient(new WebTorrent(), {'ut_sidetalk_opts': {'is_seeder': true}});
+  const client = new SCClient({'ut_sidetalk_opts': {'is_seeder': true}});
   // const client = new SCClient(new WebTorrent({dht: {bootstrap: []}}));
 
   const seed_opts = {announceList: []}  // disable default public trackers

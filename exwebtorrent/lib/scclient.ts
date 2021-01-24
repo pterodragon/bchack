@@ -11,19 +11,19 @@ export class SCClient extends EventEmitter implements ut_control {
   webtorrent: WebTorrent
   extorrent_opts: ExtorrentOpts
 
-  constructor(webtorrent: WebTorrent, extorrent_opts?: ExtorrentOpts) {
+  constructor(extorrent_opts?: ExtorrentOpts) {
     super()
-    this.webtorrent = webtorrent
+    this.webtorrent = new WebTorrent(),
     this.extorrent_opts = extorrent_opts || {}
   }
 
   seed(input, opts, onseed): ExTorrent {
-    logger.info('SCClient seed')
+    logger.info('SCClient seed: %s', input)
     return new ExTorrent(this.webtorrent.seed(input, opts, onseed), this, this.extorrent_opts)
   }
 
   add(torrentId, opts = {}, ontorrent = () => {}): ExTorrent {
-    logger.info('SCClient add')
+    logger.info('SCClient add: %s', torrentId)
     return new ExTorrent(this.webtorrent.add(torrentId, opts, ontorrent), this)
   }
 

@@ -9,7 +9,7 @@ dotenv.config()
 
 async function main() {
   // using LSD
-  const client = new SCClient(new WebTorrent(), {'ut_sidetalk_opts': {'is_leecher': true}})
+  const client = new SCClient({'ut_sidetalk_opts': {'is_leecher': true}})
   // const client = new SCClient(new WebTorrent({dht: {bootstrap: []}}))
 
   // const webtorrent = client.webtorrent
