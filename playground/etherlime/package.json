@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "deploy": "NODE_ENV=production node index.js"
+  },
+  "dependencies": {
+    "@statechannels/devtools": "^0.5.1",
+    "@statechannels/nitro-protocol": "^0.12.0",
+    "scrypt": "github:barrysteyn/node-scrypt#fb60a8d3c158fe115a624b5ffa7480f3a24b03fb"
+  },
+  "devDependencies": {
+    "etherlime": "^2.3.3"
+  }
+}

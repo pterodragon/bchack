@@ -1,0 +1,12 @@
+{
+  "name": "truffle",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "truffle": "^5.1.60"
+  },
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^1.2.1"
+  }
+}

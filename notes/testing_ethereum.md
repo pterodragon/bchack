@@ -8,7 +8,9 @@ meaning that nodes are in charge of maintaining the network.
 https://medium.com/coinmonks/ethereum-test-networks-69a5463789be
 
 
-## Deposit "Test" money to Ropsten
-https://faucet.ropsten.be/
+## Deposit "Test" money to testnet
+- https://faucet.ropsten.be/
+- https://faucet.rinkeby.io/
+- https://goerli-faucet.slock.it/
 
 please wait 20 seconds for the ETH to be transffered.
