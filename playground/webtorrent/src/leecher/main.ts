@@ -27,7 +27,7 @@ async function main() {
           }
         )
       }
-    )}, 5000)
+    )}, 15000)
 
   const torrent = await new Promise((resolve, reject) => {
     try {

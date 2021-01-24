@@ -23,7 +23,8 @@ export class ExTorrent {
       logger.info('ready Torrent %s', torrent.magnetURI)
     })
     this.torrent.on('wire', (wire: Wire, addr) => {
-      wire.setTimeout(86400000)
+      logger.debug('my torrent bitfield: %o', [this.torrent.bitfield])
+      // wire.setTimeout(86400000)
       wire.use(ut_sidetalk)
       wire.ut_sidetalk.ut_sidetalk_opts = opts?.ut_sidetalk_opts
       wire.ut_sidetalk.set_cbs(this.client, this)
@@ -51,6 +52,7 @@ export class ExTorrent {
         if (wire.ut_sidetalk.wire_paused) {
           wire.ut_sidetalk.send('notice', {'msg': 'piece denied: pay up!'})
         } else {
+          scclient._onTorrentEvent(this, wire, 'pieces-uploaded', index, offset)
           wire._piece_orig(index, offset, buffer)
         }
       }

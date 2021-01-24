@@ -39,6 +39,9 @@ export interface ut_control {
   /**
    * Triggered when some pieces finished downloading
    * Letting the accountant knows the progress
+   *
+   * Note that a piece has multiple chunks, so that the same piece number may
+   * trigger the event handler multiple times
    * @param event 
    * @param listener 
    * 

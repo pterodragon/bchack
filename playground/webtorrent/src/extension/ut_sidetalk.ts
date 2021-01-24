@@ -56,13 +56,14 @@ export class ut_sidetalk extends EventEmitter implements Extension {
     this.wire.on('close', () => {
       scclient._onTorrentEvent(torrent, this.wire, 'close')
     })
-    this.wire.on('have', () => {
-      scclient._onTorrentEvent(torrent, this.wire, 'have')
+    this.wire.on('have', (index) => {
+      scclient._onTorrentEvent(torrent, this.wire, 'have', index)
     })
     this.wire.on('upload', (buf_len) => {
       // served a piece
       this.consume_pieces(1)
-      scclient._onTorrentEvent(torrent, this.wire, 'upload', buf_len)
+      // wrapped `piece` method
+      // scclient._onTorrentEvent(torrent, this.wire, 'upload', buf_len)
     })
     this.wire.on('interested', () => {
       scclient._onTorrentEvent(torrent, this.wire, 'interested')
@@ -77,6 +78,9 @@ export class ut_sidetalk extends EventEmitter implements Extension {
     })
     this.wire.on('piece', (index, offset, buffer) => {
       scclient._onTorrentEvent(torrent, this.wire, 'piece', index, offset)
+    })
+    this.wire.on('bitfield', (peerPieces) => {
+      scclient._onTorrentEvent(torrent, this.wire, 'bitfield', peerPieces)
     })
   }
 
@@ -100,7 +104,7 @@ export class ut_sidetalk extends EventEmitter implements Extension {
       this.emit(msg.tag, this.wire, msg.payload)
       if (msg.tag == 'topup') {
         logger.info('topping up')
-        this.topup_pieces(5)
+        this.topup_pieces(100)
       }
     }
   }

@@ -11,6 +11,7 @@
     "debug-seeder": "node --inspect-brk --require ts-node/register src/seeder/main.ts"
   },
   "dependencies": {
+    "bitfield": "^4.0.0",
     "bittorrent-dht": "^10.0.0",
     "bittorrent-protocol": "^3.2.0",
     "build": "^0.1.4",
