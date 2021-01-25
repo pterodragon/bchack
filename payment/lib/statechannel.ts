@@ -19,16 +19,19 @@ export class StateChannel {
   //mapping between participants(publickey) and their latest signed state
   private _signedStates = new Map<string, SignedState>();
 
-  static createFromScratch(
+  static async createFromScratch(
     wallet: Wallet,
     chainId: string,
     participants: string[],
-  ): StateChannel {
+  ): Promise<StateChannel> {
     const instance = new StateChannel(wallet);
     const channel = createChannel(chainId, participants);
     instance._channelId = getChannelId(channel);
-    //@ts-expect-error
-    instance.signed = { state: createState(channel) };
+
+    const myaddress = await wallet.getAddress();
+    const state = createState(channel);
+    const signature = await sign(wallet.getMessageSigner(), state);
+    instance.update( myaddress,  { state, signature });
     return instance;
   }
 
@@ -62,15 +65,9 @@ export class StateChannel {
   }
 
   get latestState(): State {
-    let maxTurnNum = -1;
-    let ret = undefined;
-    for (let [address, {state}] of this._signedStates) {
-      if (state.turnNum > maxTurnNum) {
-        maxTurnNum = state.turnNum;
-        ret = state;
-      }
-    }
-    return ret;
+    return Array.from(this._signedStates).reduce((ret, [_, {state}])=>
+      (ret && (ret.turnNum > state.turnNum)) ? ret : state
+    , undefined as State);
   }
 
   getSignedState(whoSigned: string): SignedState {
@@ -104,21 +101,10 @@ export class StateChannel {
     return this.update(await this.address, signed);
   }
 
-  async payout(address: string, value: BigNumber): Promise<SignedState> {
+  async request(from: string, to: string, value: BigNumber): Promise<SignedState> {
 
-    let state = nitro.sub(this.latestState, await this.address, value);
-    state = nitro.add(state, address, value);
-
-    const signer = this.wallet.getMessageSigner();
-    const signature = await sign(signer, state);
-
-    const signed = { state, signature };
-    return this.update(await this.address, signed);
-  }
-
-  async requestConclude(): Promise<SignedState> {
-    const { latestState: state } = this;
-    state.isFinal = true;
+    let state = nitro.sub(this.latestState, from, value);
+    state = nitro.add(state, to, value);
     state.turnNum += 1;
 
     const signer = this.wallet.getMessageSigner();
@@ -127,11 +113,33 @@ export class StateChannel {
     return { state, signature };
   }
 
-  async conclude(signed: SignedState) {
-    const { state } = this.signed = signed;
+  isConcludable(): boolean {
+    return Array.from(this._signedStates).reduce((ret, [_, signed])=>{
+      if (ret === -1) return -1;
+      if (ret > 0 && ret != signed.state.turnNum) return -1;
+      if (!signed.signature) return -1;
+      if (!signed.state.isFinal) return -1;
+      return Math.max(ret, signed.state.turnNum);
+    }, 0) > 0;
+  }
+
+  async finalize(): Promise<SignedState> {
+    const { latestState: state } = this;
+    state.isFinal = true;
+
     const signer = this.wallet.getMessageSigner();
-    const mysignature = await sign(signer, state);
-    const event = await nitro.conclude(this.nitroAdjudicator, state, [mysignature, signed.signature]);
+    const signature = await sign(signer, state);
+
+    return { state, signature };
+  }
+
+  async conclude() {
+    //if (!this.isConcludable()) throw new Error(`statechannel ${this._channelId} is not concludable`);
+    
+    const state = this.latestState;
+    const {participants} = state.channel;
+    const signatures = participants.map((addr)=>this.getSignedState(addr).signature);
+    const event = await nitro.conclude(this.nitroAdjudicator, this.latestState, signatures);
     return nitro.explainConclusion(event, [this.ethAssetHolder, this.nitroAdjudicator]);
   }
 

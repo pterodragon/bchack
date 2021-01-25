@@ -1,9 +1,8 @@
 /* Import ethereum wallet utilities  */
-import { ethers, Signer } from "ethers";
-import { extractLastAllocationItem, StateChannelsPayment } from "../lib/statechannels";
+import { ethers } from "ethers";
+import { StateChannelsPayment } from "../lib/statechannels";
 import {LocalWallet} from "./localwallet";
 const {BigNumber} = ethers;
-import { convertBytes32ToAddress} from "@statechannels/nitro-protocol"; 
 import { ETHERLIME_ACCOUNTS } from "@statechannels/devtools";
 
 /* Set up an ethereum provider connected to our local blockchain */
@@ -39,55 +38,72 @@ describe("test statechannel payment", function() {
 
 
 
-  it("1: seeder and leecher handshake", async () => {
+  it("1: seeder and leecher handshake", async (done) => {
 
-    const HANDSHAKE_ID1 = "leecher1";
+    const HANDSHAKE_ID1 = "seeder1";
 
-    leecher.on("handshake", async(from: string, id: string) => {
-      //2. leecher received a handshake from seeker
+    seeder.on("handshake", async(from: string, handshakeId: string) => {
+      //2. seeder received a handshake from leecher
       //--------------------------------------------------
-      console.log(`leecher received handeshake from ${from} of id:${id}`);
+      console.log(`seeder received handeshake from ${from} of id:${handshakeId}`);
 
-      expect(from).toBe(seederAddress);
+      expect(from).toBe(leecherAddress);
+      expect(handshakeId).toBe(HANDSHAKE_ID1);
 
-      //leecher handshake back
-      const payload = await leecher.handshake(id, from);
-      await sendToSeeder(payload);
+      //seeder handshake back
+      const payload = await seeder.handshake(handshakeId, from);
+      await sendToLeecher(payload);
     });
 
-    seeder.on("handshakeBack", async(from: string, id: string) => {
-      //3. seeder received a handshake from seeker
+    leecher.on("handshakeBack", async(from: string, handshakeId: string, channelId: string) => {
+      //3. leecher received a handshake back from seeker
       //--------------------------------------------------
-      console.log(`seeder now knows address of ${id} is ${from}`);
+      console.log(`leecher now knows address of ${handshakeId} is ${from}`);
+
+      expect(from).toBe(seederAddress);
       //  in practice: store this address(from) somewhere for future use, 
       //               maybe a map between IP and address
-      expect(from).toBe(leecherAddress);
+      expect(handshakeId).toBe(HANDSHAKE_ID1);
 
       //expect both seeder and leecher has the same initial state after handshake
       const seederChannel = seeder.getChannel(leecherAddress);
       const leecherChannel = leecher.getChannel(seederAddress);
-      expect(seederChannel.signed.state).toBe(leecherChannel.signed.state)
+      expect(seederChannel.latestState).toBe(leecherChannel.latestState)
+
+      done();
     });
 
-    //1. seeder wants to handshake with leecher 
+
+    //1. leecher wants to handshake with leecher 
     //--------------------------------------------------
-    //since seeder doesn't know leecher's address yet, 
-    // he send leecher a artifical handshakeId for recognizing leecher later
+    //since leecher doesn't know seeder's address yet, 
+    // he send seeder a artifical handshakeId for recognizing the seeder later
     // in practice: the handshakeId could be the IP address of leecher
-    console.log(`seeder wants to handshake with ${HANDSHAKE_ID1}`)
-    const payload = await seeder.handshake(HANDSHAKE_ID1);
-    await sendToLeecher(payload);
+    console.log(`leecher wants to handshake with ${HANDSHAKE_ID1}`)
+    const payload = await leecher.handshake(HANDSHAKE_ID1);
+    await sendToSeeder(payload);
   });
 
 
-  it("2: leecher deposit eth to the channel", async() => {
+  it("2: leecher deposit eth to the channel", async(done) => {
     const DEPOSIT_AMOUNT = "1000";
+
+    //2. seeder received deposited event
+    //--------------------------------------------------
+    seeder.on('deposited', (address, amount)=> {
+      expect(address).toBe(leecherAddress);
+      expect(amount.toString()).toBe(DEPOSIT_AMOUNT);
+      done();
+    });
+
+    //1. leecher deposit to the channel
+    //--------------------------------------------------
     console.log(`leecher deposit ${DEPOSIT_AMOUNT} to the channel of ${seederAddress}`);
-    const ret = await leecher.deposit(seederAddress, BigNumber.from(DEPOSIT_AMOUNT));
-    expect(ret).toBeTruthy();
+    const payload = await leecher.deposit(seederAddress, BigNumber.from(DEPOSIT_AMOUNT));
+    await sendToSeeder(payload);
   });
 
-  it("3: seeder request eth from leecher", async () => {
+  it("3: seeder request eth from leecher", async (done) => {
     const REQUEST_AMOUNT = "101";
     //2. leecher received a request from seeker
     //--------------------------------------------------
@@ -96,14 +112,9 @@ describe("test statechannel payment", function() {
       expect(from).toBe(seederAddress);
       expect(amount.toString()).toBe(REQUEST_AMOUNT);
 
-      const leecherChannel = leecher.getChannel(seederAddress);
-      const allocation = extractLastAllocationItem(leecherChannel.state);
-      expect(allocation.amount.toString()).toBe(REQUEST_AMOUNT);
-      expect(convertBytes32ToAddress(allocation.destination)).toBe(seederAddress);
-
       //leecher agrees on the amount and response
       const payload =  await agree();
-      await sendToSeeder(payload).catch(err=>console.error(err));
+      await sendToSeeder(payload);
     });
 
     seeder.on("received", (from, amount)=> {
@@ -114,15 +125,11 @@ describe("test statechannel payment", function() {
       expect(from).toBe(leecherAddress);
       expect(amount.toString()).toBe(REQUEST_AMOUNT);
 
-      const seederChannel = seeder.getChannel(leecherAddress);
-      const allocation = extractLastAllocationItem(seederChannel.state);
-      expect(allocation.amount.toString()).toBe(REQUEST_AMOUNT);
-      expect(convertBytes32ToAddress(allocation.destination)).toBe(seederAddress);
-
-
       //expect both seeder and leecher has the same state after leecher agree on the request
+      const seederChannel = seeder.getChannel(leecherAddress);
       const leecherChannel = leecher.getChannel(seederAddress);
-      expect(seederChannel.signed.state).toBe(leecherChannel.signed.state)
+      expect(seederChannel.latestState).toBe(leecherChannel.latestState)
+      done();
     });
 
     //1. seeder requests eth from leecher 
@@ -138,19 +145,25 @@ describe("test statechannel payment", function() {
 
     //2. seeder received the finalize request
     //--------------------------------------------------
-    seeder.on("finalized", async(from: string, log: any)=>{
+    seeder.on("finalized", async(from: string, conclusion: any)=>{
       console.log(`the channel between seeder and ${from} is finalized`);
-      console.log(log);
+      console.log(conclusion);
       done();
     })
 
     //1. leecher asks for conclusion of the channel with seeder
     //--------------------------------------------------
     const payload = await leecher.finalize(seederAddress);
+    //payload.signed.state.channel.participants.map(p=>leecher.getChannel(seederAddress).getSignedState(p).state).map(logJSON);
     await sendToSeeder(payload);
   });
 
 
 });
+
+//for debug use
+function logJSON(obj: any) {
+  console.log(JSON.stringify(obj, null, 2));
+}
 
 

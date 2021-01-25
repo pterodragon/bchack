@@ -36,7 +36,7 @@ export function createChannel(chainId: string, participants: string[]): Channel 
 
 export function createState(channel: Channel, challengeDuration=10): State {
   return {
-    turnNum: 0,
+    turnNum: 1,
     isFinal: false,
     channel,
     outcome: [],
@@ -78,7 +78,9 @@ class OutcomesMap extends Map<string, Map<string, BigNumber>> {
       const allocationItems = Array.from(m).map(([destination, amount])=>({destination, amount: amount.toHexString()}))
       ret.push({assetHolderAddress, allocationItems});
     }
-    return ret;
+    //sort the results to make sure state.outcome in all parties are sync
+    ret.forEach((allocationOutcome)=>allocationOutcome.allocationItems.sort((a, b)=>a.destination.localeCompare(b.destination)));
+    return ret.sort((a,b)=>a.assetHolderAddress.localeCompare(b.assetHolderAddress));
   }
 };
 
