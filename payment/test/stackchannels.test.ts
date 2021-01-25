@@ -143,14 +143,20 @@ describe("test statechannel payment", function() {
   });
 
   it("4: advertisement server funds the channel", async()=>{
+    const FUNDING = BigNumber.from("150000000000000000000000");
+
     const adWallet = new LocalWallet(provider, ETHERLIME_ACCOUNTS[2].privateKey);
     const statechannel = leecher.getChannel(seederAddress);
     const targetChannelId = statechannel.channelId;
-    const holdings = await statechannel.updateHolding();
+    const before = await statechannel.updateHolding();
 
-    console.log("before advertisement funding, holdings = ", holdings.toString());
-    await StateChannel.externalDeposit(adWallet, targetChannelId, holdings, BigNumber.from("150000000000000000000000"));
-    console.log("after advertisement funding, holdings = ", (await statechannel.updateHolding()).toString());
+    console.log("before advertisement funding, holdings = ", before.toString());
+    await StateChannel.externalDeposit(adWallet, targetChannelId, before, FUNDING);
+
+    const after = await statechannel.updateHolding();
+    console.log("after advertisement funding, holdings = ", after.toString());
+
+    expect(after).toStrictEqual(before.add(FUNDING));
   });
 
   //note: I know in real case there is no incentive for leecher to call for conclusion...
