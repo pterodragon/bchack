@@ -33,7 +33,8 @@ describe("test statechannel payment", function() {
   beforeAll(async() => {
     seederAddress = await seederWallet.getAddress();
     leecherAddress = await leecherWallet.getAddress();
-    console.log({seederAddress, leecherAddress});
+    console.log('seeder', seederAddress , (await seederWallet.getSigner().getBalance()).toString());
+    console.log('leecher', leecherAddress, (await leecherWallet.getSigner().getBalance()).toString());
   });
 
 
@@ -86,7 +87,7 @@ describe("test statechannel payment", function() {
 
 
   it("2: leecher deposit eth to the channel", async(done) => {
-    const DEPOSIT_AMOUNT = "1000";
+    const DEPOSIT_AMOUNT = "500000000000000000000000";
 
     //2. seeder received deposited event
     //--------------------------------------------------
@@ -104,7 +105,8 @@ describe("test statechannel payment", function() {
   });
 
   it("3: seeder request eth from leecher", async (done) => {
-    const REQUEST_AMOUNT = "101";
+    const REQUEST_AMOUNT = "200000000000000000000000";
+
     //2. leecher received a request from seeker
     //--------------------------------------------------
     leecher.on("requested", async(from, amount, agree)=> {
@@ -139,15 +141,18 @@ describe("test statechannel payment", function() {
     await sendToLeecher(payload);
   });
 
+
   //note: I know in real case there is no incentive for leecher to call for conclusion...
   //for Demo let's assume all participants are super honest !
-  it("4: leecher wants to finalize the channel", async(done)=>{
+  it("5: leecher wants to finalize the channel", async(done)=>{
 
     //2. seeder received the finalize request
     //--------------------------------------------------
     seeder.on("finalized", async(from: string, conclusion: any)=>{
       console.log(`the channel between seeder and ${from} is finalized`);
       console.log(conclusion);
+      console.log('seeder balance', (await seederWallet.getSigner().getBalance()).toString());
+      console.log('leecher balance', (await leecherWallet.getSigner().getBalance()).toString());
       done();
     })
 

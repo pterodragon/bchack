@@ -35,7 +35,7 @@ export class MetamaskWallet extends EventEmitter implements Wallet {
   open(): void {
   }
 
-  getMessageSigner(): Signer {
+  getSigner(): Signer {
     return this._signer;
   }
 

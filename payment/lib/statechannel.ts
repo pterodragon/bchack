@@ -30,7 +30,7 @@ export class StateChannel {
 
     const myaddress = await wallet.getAddress();
     const state = createState(channel);
-    const signature = await sign(wallet.getMessageSigner(), state);
+    const signature = await sign(wallet.getSigner(), state);
     instance.update( myaddress,  { state, signature });
     return instance;
   }
@@ -94,7 +94,7 @@ export class StateChannel {
     this._holdings = destinationHoldings;
     const state = nitro.add(this.latestState, await this.address, value);
 
-    const signer = this.wallet.getMessageSigner();
+    const signer = this.wallet.getSigner();
     const signature = await sign(signer, state);
 
     const signed = { state, signature };
@@ -107,7 +107,7 @@ export class StateChannel {
     state = nitro.add(state, to, value);
     state.turnNum += 1;
 
-    const signer = this.wallet.getMessageSigner();
+    const signer = this.wallet.getSigner();
     const signature = await sign(signer, state);
 
     return { state, signature };
@@ -127,7 +127,7 @@ export class StateChannel {
     const { latestState: state } = this;
     state.isFinal = true;
 
-    const signer = this.wallet.getMessageSigner();
+    const signer = this.wallet.getSigner();
     const signature = await sign(signer, state);
 
     return { state, signature };

@@ -90,7 +90,7 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
           type: 'transfer',
           signed: {
             state: signed.state,
-            signature: await sign(this._wallet.getMessageSigner(), signed.state),
+            signature: await sign(this._wallet.getSigner(), signed.state),
           },
           event: {amount: event.amount}
         });

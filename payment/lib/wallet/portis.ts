@@ -30,7 +30,7 @@ export class PortisWallet extends EventEmitter implements Wallet {
     this._portis.showPortis();
   }
 
-  getMessageSigner(): Signer {
+  getSigner(): Signer {
     return this._signer;
   }
 
