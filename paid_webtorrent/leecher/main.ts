@@ -6,7 +6,7 @@ import {ETHERLIME_ACCOUNTS} from "@statechannels/devtools";
 
 async function main() {
   const provider = new ethers.providers.JsonRpcProvider(
-    `http://localhost:${process.env.GANACHE_PORT}`
+    `http://${process.env.GANACHE_HOST}:${process.env.GANACHE_PORT}`
   );
 
   const wallet = new LocalWallet(provider, ETHERLIME_ACCOUNTS[1].privateKey);

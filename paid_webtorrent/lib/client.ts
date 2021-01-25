@@ -21,12 +21,18 @@ export class PaidWTClient extends SCClient {
 
     const {ut_sidetalk_opts: {is_leecher, is_seeder}} = this.extorrent_opts
     this.on('established', (wire: Wire) => {
-      if (is_seeder) {
-        this.channel.on("handshake", async(from: string, handshakeId: string) => {
-          logger.info('seeder received payment handshake')
-        }
+      if (!is_seeder) {
+        return
       }
-      logger.info('new wire established')
+      this.channel.on("handshake", async(from: string, handshakeId: string) => {
+        logger.info('seeder got handshakeId: %s, from %s', handshakeId, from)
+        const payload = await this.channel.handshake(handshakeId, from); // error...
+        wire.ut_sidetalk.send('sc handshake', {'payload': payload})
+      })
+      wire.ut_sidetalk.on('sc handshake', (wire, payload) => {
+        this.channel.received(payload).catch((err) => {logger.error('channel errored when receiving payload: %o', err)})
+
+      })
     })
 
 
@@ -59,15 +65,15 @@ export class PaidWTClient extends SCClient {
     //
     const {ut_sidetalk_opts: {is_leecher, is_seeder}} = this.extorrent_opts
     this.on('established', (wire: Wire) => {
-      if (is_leecher) {
-        logger.info('ztest handshake')
-        const handshake_id = this.webtorrent.nodeId + '_' + wire.peerId;
-        (async () => {
-          const payload = await this.channel.handshake(handshake_id);
-          wire.ut_sidetalk.send('sc handshake', payload)
-        }
-        )();
+      if (!is_leecher) {
+        return
       }
+      const handshake_id = this.webtorrent.nodeId + '_' + wire.peerId;
+      (async () => {
+        const payload = await this.channel.handshake(handshake_id);
+        wire.ut_sidetalk.send('sc handshake', {'payload': payload})
+      }
+      )();
       logger.info('new wire established')
     })
 
