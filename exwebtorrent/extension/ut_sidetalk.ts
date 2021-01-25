@@ -89,13 +89,13 @@ export class ut_sidetalk extends EventEmitter implements Extension {
     this.wire = wire
   }
 
-  onHandshake(infoHash, peerId, extensions) {
-    logger.info('ut_sidetalk onHandshake')
-  }
+  // onHandshake(infoHash, peerId, extensions) {
+  //   logger.info('ut_sidetalk onHandshake')
+  // }
 
-  onExtendedHandshake(handshake) {
-    logger.info('ut_sidetalk onExtendedHandshake')
-  }
+  // onExtendedHandshake(handshake) {
+  //   logger.info('ut_sidetalk onExtendedHandshake')
+  // }
 
   onMessage(buf: Buffer): void {
     const msg = JSON.parse(buf.toString())

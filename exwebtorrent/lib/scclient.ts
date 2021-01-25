@@ -44,7 +44,7 @@ export class SCClient extends EventEmitter implements ut_control {
         this.emit('disconnected', wire)
         break
       }
-      case 'wire': {
+      case 'established': {
         this.emit('established', wire)
         break
       }

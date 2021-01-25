@@ -24,10 +24,14 @@ export class ExTorrent {
     })
     this.torrent.on('wire', (wire: Wire, addr) => {
       logger.debug('my torrent bitfield: %o', [this.torrent.bitfield])
+      logger.debug('use ut_sidetalk')
       // wire.setTimeout(86400000)
       wire.use(ut_sidetalk)
       wire.ut_sidetalk.ut_sidetalk_opts = opts?.ut_sidetalk_opts
       wire.ut_sidetalk.set_cbs(this.client, this)
+      wire.ut_sidetalk.onExtendedHandshake = (handshake) => {
+        scclient._onTorrentEvent(this, wire, 'established')
+      }
 
       // at start, seeder won't respond to requests
       if (opts?.ut_sidetalk_opts?.is_seeder) {
@@ -56,8 +60,6 @@ export class ExTorrent {
           wire._piece_orig(index, offset, buffer)
         }
       }
-
-      scclient._onTorrentEvent(this, wire, 'wire', addr)
     })
   }
 }

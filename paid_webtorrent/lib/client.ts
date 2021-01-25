@@ -19,6 +19,17 @@ export class PaidWTClient extends SCClient {
   async run_seeder() {
     const filepath = process.env.SEED_FILEPATH;
 
+    const {ut_sidetalk_opts: {is_leecher, is_seeder}} = this.extorrent_opts
+    this.on('established', (wire: Wire) => {
+      if (is_seeder) {
+        this.channel.on("handshake", async(from: string, handshakeId: string) => {
+          logger.info('seeder received payment handshake')
+        }
+      }
+      logger.info('new wire established')
+    })
+
+
     await new Promise((resolve, reject) => {
       try {
         const seed_opts = {announceList: []}  // disable default public trackers
@@ -50,11 +61,9 @@ export class PaidWTClient extends SCClient {
     this.on('established', (wire: Wire) => {
       if (is_leecher) {
         logger.info('ztest handshake')
-        // send handshake 
         const handshake_id = this.webtorrent.nodeId + '_' + wire.peerId;
         (async () => {
           const payload = await this.channel.handshake(handshake_id);
-          logger.info('sent handshake')
           wire.ut_sidetalk.send('sc handshake', payload)
         }
         )();
