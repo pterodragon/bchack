@@ -7,7 +7,7 @@ import * as nitro from "./nitro";
 
 
 import {
-  ContractArtifacts, getChannelId, Channel, State, SignedState,
+  ContractArtifacts, getChannelId, Channel, State, SignedState, DepositedEvent,
 } from "@statechannels/nitro-protocol";
 
 
@@ -45,6 +45,15 @@ export class StateChannel {
     instance._channelId = channelId;
     instance.update(from, signed);
     return instance;
+  }
+
+  static externalDeposit(wallet: Wallet, channelId: string,expectHeld:BigNumber, value: BigNumber): Promise<DepositedEvent> {
+    const ethAssetHolder = new ethers.Contract(
+      nitro.ETH_ASSET_HOLDER_ADDRESS,
+      ContractArtifacts.EthAssetHolderArtifact.abi,
+      wallet.getConstractSigner()
+    );
+    return nitro.deposit(ethAssetHolder, channelId, expectHeld, value);
   }
 
   private constructor( private readonly wallet: Wallet) { 
@@ -102,8 +111,7 @@ export class StateChannel {
   }
 
   async request(from: string, to: string, value: BigNumber): Promise<SignedState> {
-
-    let state = nitro.sub(this.latestState, from, value);
+let state = nitro.sub(this.latestState, from, value);
     state = nitro.add(state, to, value);
     state.turnNum += 1;
 
@@ -118,9 +126,7 @@ export class StateChannel {
       if (ret === -1) return -1;
       if (ret > 0 && ret != signed.state.turnNum) return -1;
       if (!signed.signature) return -1;
-      if (!signed.state.isFinal) return -1;
-      return Math.max(ret, signed.state.turnNum);
-    }, 0) > 0;
+      if (!signed.state.isFinal) return -1; return Math.max(ret, signed.state.turnNum); }, 0) > 0;
   }
 
   async finalize(): Promise<SignedState> {
@@ -143,5 +149,9 @@ export class StateChannel {
     return nitro.explainConclusion(event, [this.ethAssetHolder, this.nitroAdjudicator]);
   }
 
+  async updateHolding(): Promise<BigNumber> {
+    this._holdings = await this.ethAssetHolder.holdings(this._channelId);
+    return this._holdings;
+  }
 }
 

@@ -1,9 +1,10 @@
 /* Import ethereum wallet utilities  */
 import { ethers } from "ethers";
-import { StateChannelsPayment } from "../lib/statechannels";
-import {LocalWallet} from "./localwallet";
 const {BigNumber} = ethers;
 import { ETHERLIME_ACCOUNTS } from "@statechannels/devtools";
+import {StateChannel} from "../lib/statechannel";
+import { StateChannelsPayment } from "../lib/statechannels";
+import {LocalWallet} from "./localwallet";
 
 /* Set up an ethereum provider connected to our local blockchain */
 const provider = new ethers.providers.JsonRpcProvider(
@@ -141,6 +142,16 @@ describe("test statechannel payment", function() {
     await sendToLeecher(payload);
   });
 
+  it("4: advertisement server funds the channel", async()=>{
+    const adWallet = new LocalWallet(provider, ETHERLIME_ACCOUNTS[2].privateKey);
+    const statechannel = leecher.getChannel(seederAddress);
+    const targetChannelId = statechannel.channelId;
+    const holdings = await statechannel.updateHolding();
+
+    console.log("before advertisement funding, holdings = ", holdings.toString());
+    await StateChannel.externalDeposit(adWallet, targetChannelId, holdings, BigNumber.from("150000000000000000000000"));
+    console.log("after advertisement funding, holdings = ", (await statechannel.updateHolding()).toString());
+  });
 
   //note: I know in real case there is no incentive for leecher to call for conclusion...
   //for Demo let's assume all participants are super honest !
