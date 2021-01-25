@@ -3,7 +3,7 @@ import { BigNumber } from "ethers";
 import { SignedState } from "@statechannels/nitro-protocol";
 import { sign } from './utils';
 import {PaymentInterface} from "./interface";
-import {Wallet} from './wallet';
+import {Wallet} from './wallet/wallet';
 import {StateChannel} from './statechannel';
 
 
