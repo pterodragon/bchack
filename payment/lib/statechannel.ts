@@ -7,41 +7,53 @@ import * as nitro from "./nitro";
 
 
 import {
-  ContractArtifacts, getChannelId, Channel, State, SignedState,
+  ContractArtifacts, getChannelId, Channel, State, SignedState, DepositedEvent,
 } from "@statechannels/nitro-protocol";
 
 
 export class StateChannel {
   private readonly nitroAdjudicator: ethers.Contract;
   private readonly ethAssetHolder: ethers.Contract;
-  private expectedHeld = BigNumber.from(0);
+  private _holdings = BigNumber.from(0);
   private _channelId: string;
+  //mapping between participants(publickey) and their latest signed state
+  private _signedStates = new Map<string, SignedState>();
 
-  public signed: SignedState;
-  public get channelId() { return this._channelId; }
-
-  static createFromScratch(
+  static async createFromScratch(
     wallet: Wallet,
     chainId: string,
     participants: string[],
-  ): StateChannel {
+  ): Promise<StateChannel> {
     const instance = new StateChannel(wallet);
     const channel = createChannel(chainId, participants);
     instance._channelId = getChannelId(channel);
-    //@ts-expect-error
-    instance.signed = { state: createState(channel) };
+
+    const myaddress = await wallet.getAddress();
+    const state = createState(channel);
+    const signature = await sign(wallet.getSigner(), state);
+    instance.update( myaddress,  { state, signature });
     return instance;
   }
 
   static createFromState(
     wallet: Wallet,
     channelId: string,
+    from: string,
     signed: SignedState
   ): StateChannel {
     const instance = new StateChannel(wallet);
     instance._channelId = channelId;
-    instance.update(signed);
+    instance.update(from, signed);
     return instance;
+  }
+
+  static externalDeposit(wallet: Wallet, channelId: string,expectHeld:BigNumber, value: BigNumber): Promise<DepositedEvent> {
+    const ethAssetHolder = new ethers.Contract(
+      nitro.ETH_ASSET_HOLDER_ADDRESS,
+      ContractArtifacts.EthAssetHolderArtifact.abi,
+      wallet.getConstractSigner()
+    );
+    return nitro.deposit(ethAssetHolder, channelId, expectHeld, value);
   }
 
   private constructor( private readonly wallet: Wallet) { 
@@ -57,50 +69,89 @@ export class StateChannel {
     );
   }
 
-  get state(): State {
-    return this.signed.state;
+  get channelId(): string { 
+    return this._channelId; 
   }
 
-  get remain(): BigNumber {
-    return this.expectedHeld;
+  get latestState(): State {
+    return Array.from(this._signedStates).reduce((ret, [_, {state}])=>
+      (ret && (ret.turnNum > state.turnNum)) ? ret : state
+    , undefined as State);
   }
 
-  update(signed: SignedState): void {
-    this.signed = signed;
+  getSignedState(whoSigned: string): SignedState {
+      const signed = this._signedStates.get(whoSigned);
+      if (!signed) throw new Error(`signed state of ${whoSigned} not found`);
+      return signed;
   }
 
-  async deposit(value: BigNumber) {
-    const { amountDeposited } = await nitro.deposit(this.ethAssetHolder, this.channelId, this.expectedHeld, value);
-    this.expectedHeld = amountDeposited;
+  get holdings(): BigNumber {
+    return this._holdings;
   }
 
-  async payout(address: string, value: BigNumber): Promise<SignedState> {
-    const signer = this.wallet.getMessageSigner();
-    this.signed = await nitro.transfer(signer, this.state, address, value);
-    if (address !== await this.wallet.getAddress()) {
-      this.expectedHeld = this.expectedHeld.sub(value);
-    }
-    return this.signed;
+  private get address(): Promise<string> {
+    return this.wallet.getAddress();
   }
 
-  async requestConclude(): Promise<SignedState> {
-    const { state } = this;
-    state.isFinal = true;
+  update(participant: string, signed: SignedState): SignedState {
+    this._signedStates.set(participant, signed);
+    return signed;
+  }
+
+  async deposit(value: BigNumber): Promise<SignedState> {
+    const { destinationHoldings } = await nitro.deposit(this.ethAssetHolder, this.channelId, this._holdings, value);
+    this._holdings = destinationHoldings;
+    const state = nitro.add(this.latestState, await this.address, value);
+
+    const signer = this.wallet.getSigner();
+    const signature = await sign(signer, state);
+
+    const signed = { state, signature };
+    return this.update(await this.address, signed);
+  }
+
+  async request(from: string, to: string, value: BigNumber): Promise<SignedState> {
+let state = nitro.sub(this.latestState, from, value);
+    state = nitro.add(state, to, value);
     state.turnNum += 1;
 
-    const signer = this.wallet.getMessageSigner();
+    const signer = this.wallet.getSigner();
     const signature = await sign(signer, state);
 
     return { state, signature };
   }
 
-  async conclude(signed: SignedState) {
-    const { state } = this.signed = signed;
-    const signer = this.wallet.getMessageSigner();
-    const mysignature = await sign(signer, state);
-    const event = await nitro.conclude(this.nitroAdjudicator, state, [mysignature, signed.signature]);
+  isConcludable(): boolean {
+    return Array.from(this._signedStates).reduce((ret, [_, signed])=>{
+      if (ret === -1) return -1;
+      if (ret > 0 && ret != signed.state.turnNum) return -1;
+      if (!signed.signature) return -1;
+      if (!signed.state.isFinal) return -1; return Math.max(ret, signed.state.turnNum); }, 0) > 0;
+  }
+
+  async finalize(): Promise<SignedState> {
+    const { latestState: state } = this;
+    state.isFinal = true;
+
+    const signer = this.wallet.getSigner();
+    const signature = await sign(signer, state);
+
+    return { state, signature };
+  }
+
+  async conclude() {
+    //if (!this.isConcludable()) throw new Error(`statechannel ${this._channelId} is not concludable`);
+    
+    const state = this.latestState;
+    const {participants} = state.channel;
+    const signatures = participants.map((addr)=>this.getSignedState(addr).signature);
+    const event = await nitro.conclude(this.nitroAdjudicator, this.latestState, signatures);
     return nitro.explainConclusion(event, [this.ethAssetHolder, this.nitroAdjudicator]);
   }
 
+  async updateHolding(): Promise<BigNumber> {
+    this._holdings = await this.ethAssetHolder.holdings(this._channelId);
+    return this._holdings;
+  }
 }
 

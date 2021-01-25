@@ -5,7 +5,7 @@ export declare interface Wallet {
   open(): void;
 
   getAddress(): Promise<string>;
-  getMessageSigner(): Signer
+  getSigner(): Signer   //message signer
   getConstractSigner(): Signer
   getProvider(): ethers.providers.BaseProvider; 
 }
