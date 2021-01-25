@@ -1,7 +1,6 @@
 import { createStore } from "redux";
-import rootReducer from "./reducers";
+import {initialState, StateChannelsReducer as rootReducer } from "./reducers/statechannels";
 
-const initialState = {}
 
 const store = createStore(
   rootReducer,
