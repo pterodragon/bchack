@@ -5,7 +5,7 @@ import StateChannelsPanel from "../components/StateChannelsPannel.js"
 
 const mapStateToProps = (state, ownProps) => ({
   // ... computed data from state and optionally ownProps
-  statechannels: state.statechannels
+  statechannels: state
 });
 
 

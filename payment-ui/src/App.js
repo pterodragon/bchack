@@ -14,6 +14,8 @@ function getLibrary(provider, connector) {
 }
 
 import store from "./redux/store";
+//for debug
+global.store = store;
 
 class App extends Component {
   componentDidMount() {

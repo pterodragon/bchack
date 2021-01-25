@@ -43,7 +43,7 @@ export default function StateChannelsPanel({statechannels}) {
       <span>deposit</span>
       <span>allocations</span>
     </div>
-    {(Object.entries(statechannels).map(([channelId, statechannel]) => 
+    {(statechannels && Object.entries(statechannels).map(([channelId, statechannel]) => 
       (<StateChannel 
         channelId={channelId} 
         key={channelId}
