@@ -1,6 +1,6 @@
 import {EventEmitter} from 'events';
 import { BigNumber } from "ethers";
-import { SignedState } from "@statechannels/nitro-protocol";
+import { SignedState, DepositedEvent } from "@statechannels/nitro-protocol";
 import { sign } from './utils';
 import {PaymentInterface} from "./interface";
 import {Wallet} from './wallet/wallet';
@@ -27,6 +27,10 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
     private readonly _chainId: string = process.env.CHAIN_NETWORK_ID
   ) {
     super();
+  }
+  
+  static deposit(wallet: Wallet, channelId: string, expectHeld: BigNumber, value: BigNumber): Promise<DepositedEvent> {
+    return StateChannel.externalDeposit(wallet, channelId, expectHeld, value);
   }
 
   private get address() {
