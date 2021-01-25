@@ -1,16 +1,19 @@
 import {SCClient} from 'exwebtorrent/lib/scclient'
 import dotenv from "dotenv";
 import {logger} from '../lib/logger'
-import {Wallet} from "statechannel";
+import {StateChannelsPayment, Wallet} from "statechannel";
+import {Wire} from 'bittorrent-protocol';
 
 dotenv.config()
 
 export class PaidWTClient extends SCClient {
   private wallet: Wallet
+  private channel: StateChannelsPayment
 
   constructor(wallet: Wallet, ...args) {
     super(...args)
     this.wallet = wallet
+    this.channel = new StateChannelsPayment(wallet)
   }
 
   async run_seeder() {
@@ -41,6 +44,23 @@ export class PaidWTClient extends SCClient {
     //       )
     //     }
     //   )}, 15000)
+    //
+    //
+    const {ut_sidetalk_opts: {is_leecher, is_seeder}} = this.extorrent_opts
+    this.on('established', (wire: Wire) => {
+      if (is_leecher) {
+        logger.info('ztest handshake')
+        // send handshake 
+        const handshake_id = this.webtorrent.nodeId + '_' + wire.peerId;
+        (async () => {
+          const payload = await this.channel.handshake(handshake_id);
+          logger.info('sent handshake')
+          wire.ut_sidetalk.send('sc handshake', payload)
+        }
+        )();
+      }
+      logger.info('new wire established')
+    })
 
     const torrent = await new Promise((resolve, reject) => {
       try {

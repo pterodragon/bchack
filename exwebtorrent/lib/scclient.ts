@@ -24,7 +24,7 @@ export class SCClient extends EventEmitter implements ut_control {
 
   add(torrentId, opts = {}, ontorrent = () => {}): ExTorrent {
     logger.info('SCClient add: %s', torrentId)
-    return new ExTorrent(this.webtorrent.add(torrentId, opts, ontorrent), this)
+    return new ExTorrent(this.webtorrent.add(torrentId, opts, ontorrent), this, this.extorrent_opts)
   }
 
   _onTorrentEvent(torrent: ExTorrent, wire: Wire, event: string, ...args): void {
@@ -62,7 +62,7 @@ export class SCClient extends EventEmitter implements ut_control {
       default:
         break
     }
-    this.emit(event, torrent, wire)
+    // this.emit(event, torrent, wire)
   }
 
   allow(wire: Wire, piece_count: number): void {

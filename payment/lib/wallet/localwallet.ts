@@ -17,12 +17,12 @@ export class LocalWallet implements Wallet {
   open(): void {
   } 
 
-  getMessageSigner(): Signer {
+  getSigner(): Signer {
     return this._signer;
   }
 
   getConstractSigner(): Signer { 
-    return this.getMessageSigner(); 
+    return this.getSigner(); 
   }
 
   getProvider() { return this._provider; }
