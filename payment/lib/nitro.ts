@@ -1,10 +1,11 @@
 import { Signature, BigNumber } from "ethers";
 import { ethers, Signer } from "ethers"
-import { sign, compileEventsFromLogs } from './utils';
+import { sign, outcomesToMap, compileEventsFromLogs } from './utils';
 import {
-  State, Outcome, AllocationAssetOutcome, SignedState,
+  State, Outcome, SignedState,
+  AllocationAssetOutcome,
   getDepositedEvent,
-  getFixedPart, getVariablePart, hashAppPart, hashOutcome, encodeOutcome,
+  getFixedPart, getVariablePart, hashAppPart, encodeOutcome,
   convertAddressToBytes32
 } from "@statechannels/nitro-protocol";
 
@@ -25,16 +26,32 @@ export async function deposit(ethAssetHolder: ethers.Contract, channelId: string
   return depositedEvent;
 }
 
-//transfer value to other party
-export async function transfer(signer: Signer, state: State, address: string, value: BigNumber): Promise<SignedState> {
+export function add(
+  state: State,
+  address: string,
+  value: BigNumber): State
+{
   const amount = value.toHexString();
-  const destination = convertAddressToBytes32(address);
-  state.outcome.push({
-    assetHolderAddress: ETH_ASSET_HOLDER_ADDRESS,
-    allocationItems: [ { destination, amount }, ]
-  });
-  const signature = await sign(signer, state);
-  return { state, signature };
+  state = { ...state, outcome: outcomesToMap(state.outcome as AllocationAssetOutcome[])
+                  .add(ETH_ASSET_HOLDER_ADDRESS, convertAddressToBytes32(address), amount)
+                  .toOutcome()
+  };
+  
+  return state;
+}
+
+export function sub(
+  state: State,
+  address: string,
+  value: BigNumber): State
+{
+  const amount = value.toHexString();
+  state = { ...state, outcome: outcomesToMap(state.outcome as AllocationAssetOutcome[])
+                  .sub(ETH_ASSET_HOLDER_ADDRESS, convertAddressToBytes32(address), amount)
+                  .toOutcome()
+  };
+
+  return state;
 }
 
 
@@ -63,6 +80,4 @@ export function explainConclusion(result:any, contracts: ethers.Contract[]) {
   //console.log({events: JSON.stringify(events, null, 2)});
   return events;
 }
-
-
 
