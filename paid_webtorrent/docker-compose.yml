@@ -9,7 +9,7 @@ services:
     volumes:
       - ../:/app
     command: "bash -c 'cd paid_webtorrent && npm run start-seeder'"
-    network_mode: host
+    # network_mode: host
     # environment:
     #   DEBUG: '*'
 
@@ -21,15 +21,15 @@ services:
     volumes:
       - ../:/app
     command: "bash -c 'cd paid_webtorrent && npm run start-leecher'"
-    network_mode: host
+    # network_mode: host
     # environment:
     #   DEBUG: '*'
 
-    # ganache:
-    #   container_name: ganache
-    #   build:
-    #     context: ./
-    #     dockerfile: ./Dockerfile
-    #   volumes:
-    #     - ../:/app
-    #   command: "bash -c 'cd playground/local && npm run start'"
+  ganache:
+    container_name: ganache
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    volumes:
+      - ../:/app
+    command: "bash -c 'cd playground/local && npm run start'"

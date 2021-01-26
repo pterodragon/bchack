@@ -1,10 +1,10 @@
-import {SCClient} from 'exwebtorrent/lib/scclient'
-import dotenv from "dotenv";
-import {logger} from '../lib/logger'
-import {StateChannelsPayment, Wallet} from "statechannel";
-import {Wire} from 'bittorrent-protocol';
-
+import dotenv from "dotenv"
 dotenv.config()
+import {SCClient} from 'exwebtorrent/lib/scclient'
+import {logger} from '../lib/logger'
+import {StateChannelsPayment, Wallet} from "statechannel"
+import {Wire} from 'bittorrent-protocol'
+
 
 export class PaidWTClient extends SCClient {
   private wallet: Wallet
@@ -17,22 +17,25 @@ export class PaidWTClient extends SCClient {
   }
 
   async run_seeder() {
-    const filepath = process.env.SEED_FILEPATH;
+    const filepath = process.env.SEED_FILEPATH
 
     const {ut_sidetalk_opts: {is_leecher, is_seeder}} = this.extorrent_opts
     this.on('established', (wire: Wire) => {
       if (!is_seeder) {
         return
       }
-      this.channel.on("handshake", async(from: string, handshakeId: string) => {
+      this.channel.on("handshake", async (from: string, handshakeId: string) => {
         logger.info('seeder got handshakeId: %s, from %s', handshakeId, from)
-        const payload = await this.channel.handshake(handshakeId, from); // error...
-        wire.ut_sidetalk.send('sc handshake', {'payload': payload})
+        wire.peer_address = from
+        const payload = await this.channel.handshake(handshakeId, from)
+        this._send_payload(wire, payload, 'sc handshake')
       })
       wire.ut_sidetalk.on('sc handshake', (wire, payload) => {
-        this.channel.received(payload).catch((err) => {logger.error('channel errored when receiving payload: %o', err)})
-
+        this._rcvd_payload(wire, payload)
       })
+
+      this.channel.on('deposited', (address, amount)=> {
+      });
     })
 
 
@@ -46,6 +49,14 @@ export class PaidWTClient extends SCClient {
       }
     })
     logger.info('run_seeder finished')
+  }
+
+  private _rcvd_payload(wire, payload) {
+    this.channel.received(payload).catch((err) => {logger.error('channel errored when receiving payload: %o', err)})
+  }
+
+  private _send_payload(wire, payload, tag) {
+    wire.ut_sidetalk.send(tag, {'payload': payload})
   }
 
   async run_leecher() {
@@ -68,10 +79,17 @@ export class PaidWTClient extends SCClient {
       if (!is_leecher) {
         return
       }
+      this.channel.on("handshakeBack", async (from: string, handshakeId: string) => {
+        logger.info('leecher got handshakeBack Id: %s, from %s', handshakeId, from)
+        wire.peer_address = from
+      })
+      wire.ut_sidetalk.on('sc handshake', (wire, payload) => {
+        this._rcvd_payload(wire, payload)
+      })
       const handshake_id = this.webtorrent.nodeId + '_' + wire.peerId;
       (async () => {
-        const payload = await this.channel.handshake(handshake_id);
-        wire.ut_sidetalk.send('sc handshake', {'payload': payload})
+        const payload = await this.channel.handshake(handshake_id)
+        this._send_payload(wire, payload, 'sc handshake')
       }
       )();
       logger.info('new wire established')

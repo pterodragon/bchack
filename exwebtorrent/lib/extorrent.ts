@@ -6,6 +6,7 @@ import {logger} from '../lib/logger'
 
 export interface ExtorrentOpts {
   ut_sidetalk_opts?: ut_sidetalk_opts
+  destroy_timeout_wire?: boolean // by default webtorrent internal will try to destroy wire onchoketimeout
 }
 
 export class ExTorrent {
@@ -25,7 +26,7 @@ export class ExTorrent {
     this.torrent.on('wire', (wire: Wire, addr) => {
       logger.debug('my torrent bitfield: %o', [this.torrent.bitfield])
       logger.debug('use ut_sidetalk')
-      // wire.setTimeout(86400000)
+      wire.setTimeout(86400000)
       wire.use(ut_sidetalk)
       wire.ut_sidetalk.ut_sidetalk_opts = opts?.ut_sidetalk_opts
       wire.ut_sidetalk.set_cbs(this.client, this)
@@ -60,6 +61,15 @@ export class ExTorrent {
           wire._piece_orig(index, offset, buffer)
         }
       }
+
+      // // wraps piece
+      // const _destroy = wire.destroy
+      // wire._destroy_orig = _destroy
+      // wire.destroy = (index, offset, buffer) => {
+      //   if (opts?.destroy_timeout_wire) {
+      //     wire._destroy_orig(index, offset, buffer)
+      //   }
+      // }
     })
   }
 }

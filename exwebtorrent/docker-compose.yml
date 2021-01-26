@@ -9,7 +9,7 @@ services:
     volumes:
       - ./:/app
     command: "npm run start-seeder"
-    # network_mode: host
+    network_mode: host
     # environment:
     #   DEBUG: '*'
 
@@ -21,7 +21,7 @@ services:
     volumes:
       - ./:/app
     command: "npm run start-leecher"
-    # network_mode: host
+    network_mode: host
     # environment:
     #   DEBUG: '*'
 
