@@ -1,4 +1,4 @@
-export declare type PromptInputSpec = {type: 'number' | 'checkbox' | 'select', value:any, text: string}
+export declare type PromptInputSpec = {type: 'number' | 'checkbox' | 'select' | 'text', value:any, text: string}
 
 export function promptUser(text: string, inputs:PromptInputSpec[], result:(responds: boolean, inputs: any[])=>void){
   const diag = document.getElementById("Dialog");
@@ -11,6 +11,9 @@ export function promptUser(text: string, inputs:PromptInputSpec[], result:(respo
         switch(input.type){
           case 'number':
             html = `${input.text}: <input type='number' ${input.value? "value='"+input.value : ''} class='control'></input><br/>`;
+            break;
+          case 'text':
+            html = `${input.text}: <input type='text' ${input.value? "value='"+input.value : ''} class='control'></input><br/>`;
             break;
           case 'checkbox':
             html = `<input type='checkbox' checked=${input.value? `true`:`false`} class='control' value='check${index}'></input>`;
