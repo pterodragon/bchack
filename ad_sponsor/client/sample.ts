@@ -21,14 +21,16 @@ window.onload = ()=>{
         {text: "Expected Held", type: "number", value: 0},
         {text: "Unit", type: "select", value: ["wei", "gwei"]}];
       promptUser("Request Sponsor: ", spec, (response, input)=>{
-        const channelId = input[0];
-        const amount = ethers.utils.parseUnits(input[1], input[3]);
-        const expectedHeld = ethers.utils.parseUnits(input[2], input[3]);
-        console.log("Requesting: ", amount)
+        if(response){
+          const channelId = input[0];
+          const amount = ethers.utils.parseUnits(input[1], input[3]);
+          const expectedHeld = ethers.utils.parseUnits(input[2], input[3]);
+          console.log("Requesting: ", amount)
 
-        player.adsponsor().request(channelId, amount, expectedHeld);
-        
-        player.adsponsor().on('funded', (...args: any[])=>console.log("Funded by sponsor, ", ...args))
+          player.adsponsor().request(channelId, amount, expectedHeld);
+          
+          player.adsponsor().on('funded', (...args: any[])=>console.log("Funded by sponsor, ", ...args))
+        }
       })
     }
   }
