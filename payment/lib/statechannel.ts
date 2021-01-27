@@ -4,11 +4,12 @@ import { Wallet } from "./wallet/wallet";
 import {createChannel,createState} from './utils';
 import { sign } from './utils';
 import * as nitro from "./nitro";
-
-
 import {
   ContractArtifacts, getChannelId, Channel, State, SignedState, DepositedEvent,
 } from "@statechannels/nitro-protocol";
+
+import createDebug from 'debug';
+const log = createDebug('py.statechannel');
 
 
 export class StateChannel {
@@ -24,6 +25,7 @@ export class StateChannel {
     chainId: string,
     participants: string[],
   ): Promise<StateChannel> {
+    log('createFromScratch', {chainId, participants});
     const instance = new StateChannel(wallet);
     const channel = createChannel(chainId, participants);
     instance._channelId = getChannelId(channel);
@@ -41,13 +43,15 @@ export class StateChannel {
     from: string,
     signed: SignedState
   ): StateChannel {
+    log('createFromState', {channelId, from, signed});
     const instance = new StateChannel(wallet);
     instance._channelId = channelId;
     instance.update(from, signed);
     return instance;
   }
 
-  static externalDeposit(wallet: Wallet, channelId: string,expectHeld:BigNumber, value: BigNumber): Promise<DepositedEvent> {
+  static externalDeposit(wallet: Wallet, channelId: string, expectHeld:BigNumber, value: BigNumber): Promise<DepositedEvent> {
+    log('externalDeposit', {channelId, expectHeld, value});
     const ethAssetHolder = new ethers.Contract(
       nitro.ETH_ASSET_HOLDER_ADDRESS,
       ContractArtifacts.EthAssetHolderArtifact.abi,
@@ -99,6 +103,7 @@ export class StateChannel {
   }
 
   async deposit(value: BigNumber): Promise<SignedState> {
+    log('deposit', value);
     const { destinationHoldings } = await nitro.deposit(this.ethAssetHolder, this.channelId, this._holdings, value);
     this._holdings = destinationHoldings;
     const state = nitro.add(this.latestState, await this.address, value);
@@ -111,6 +116,7 @@ export class StateChannel {
   }
 
   async request(from: string, to: string, value: BigNumber): Promise<SignedState> {
+    log('request', {from, to, value});
 let state = nitro.sub(this.latestState, from, value);
     state = nitro.add(state, to, value);
     state.turnNum += 1;
@@ -130,6 +136,7 @@ let state = nitro.sub(this.latestState, from, value);
   }
 
   async finalize(): Promise<SignedState> {
+    log('finalize');
     const { latestState: state } = this;
     state.isFinal = true;
 
@@ -140,6 +147,7 @@ let state = nitro.sub(this.latestState, from, value);
   }
 
   async conclude() {
+    log('conclude');
     //if (!this.isConcludable()) throw new Error(`statechannel ${this._channelId} is not concludable`);
     
     const state = this.latestState;
@@ -150,6 +158,7 @@ let state = nitro.sub(this.latestState, from, value);
   }
 
   async updateHolding(): Promise<BigNumber> {
+    log('updateHolding');
     this._holdings = await this.ethAssetHolder.holdings(this._channelId);
     return this._holdings;
   }

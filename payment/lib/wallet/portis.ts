@@ -1,7 +1,10 @@
 import { EventEmitter } from "events";
 import { ethers, Signer } from "ethers";
 import Portis from '@portis/web3';
+import createDebug from 'debug';
 import { Wallet } from './wallet';
+
+const log = createDebug('pm.wallet.portis');
 
 export class PortisWallet extends EventEmitter implements Wallet {
   private _provider: ethers.providers.Web3Provider;
@@ -20,6 +23,7 @@ export class PortisWallet extends EventEmitter implements Wallet {
     this._address = new Promise(resolv=>
       portis.onLogin((walletAddress) => {
         this.emit("login", walletAddress);
+        log('login', walletAddress);
         resolv(walletAddress);
       })
     );

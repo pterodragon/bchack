@@ -8,6 +8,9 @@ import {
   getFixedPart, getVariablePart, hashAppPart, encodeOutcome,
   convertAddressToBytes32
 } from "@statechannels/nitro-protocol";
+import createDebug from 'debug';
+
+const log = createDebug('py.nitro');
 
 /**
  * helper functions and contants on using nitro protocol
@@ -22,7 +25,7 @@ export async function deposit(ethAssetHolder: ethers.Contract, channelId: string
   const { events } = await (await tx).wait();
   //const { destination, amountDeposited, destinationHoldings } = getDepositedEvent(events); 
   const depositedEvent = getDepositedEvent(events); 
-  console.log({depositedEvent});
+  log({depositedEvent});
   return depositedEvent;
 }
 
@@ -63,7 +66,7 @@ export async function conclude(nitroAdjudicator: ethers.Contract, state: State, 
   const numStates = 1;
   const whoSignedWhat = new Array(signatures.length).fill(0);
 
-  //console.log({ state, fixedPart, appPartHash, outcomeBytes, numStates, whoSignedWhat, signatures });
+  log({ turnNum: state.turnNum, fixedPart, appPartHash, outcomeBytes, numStates, whoSignedWhat, signatures });
   const tx = nitroAdjudicator.concludePushOutcomeAndTransferAll(
     state.turnNum,
     fixedPart, appPartHash, outcomeBytes,
@@ -75,9 +78,7 @@ export async function conclude(nitroAdjudicator: ethers.Contract, state: State, 
 
 export function explainConclusion(result:any, contracts: ethers.Contract[]) {
   const {logs} = result;
-  //const events = compileEventsFromLogs(logs, [ this.ethAssetHolder, this.nitroAdjudicator, ]);
   const events = compileEventsFromLogs(logs, contracts);
-  //console.log({events: JSON.stringify(events, null, 2)});
   return events;
 }
 
