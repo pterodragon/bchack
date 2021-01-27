@@ -15,10 +15,13 @@ export class SCClient extends EventEmitter implements ut_control {
     super()
     this.extorrent_opts = extorrent_opts || {}
     const {ut_sidetalk_opts: {is_leecher, is_seeder}} = this.extorrent_opts
-    const webtorrent_opts = {dht: {timeBucketOutdated: 60000}, dhtPort: 41234}
+    const webtorrent_opts = {dht: {timeBucketOutdated: 60000}}
     if (is_leecher) {
       webtorrent_opts.dht['host'] = 'seeder'
-      webtorrent_opts.dht['bootstrap'] = 'seeder:41234'
+      webtorrent_opts.dht['bootstrap'] = `${process.env.BOOSTRAP_HOST}:${process.env.LEECHER_DHT_PORT}`
+      webtorrent_opts['dhtPort'] = process.env.LEECHER_DHT_PORT
+    } else {
+      webtorrent_opts['dhtPort'] = process.env.SEEDER_DHT_PORT
     }
 
     this.webtorrent = new WebTorrent(webtorrent_opts)

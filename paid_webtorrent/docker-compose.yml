@@ -10,10 +10,11 @@ services:
       - ../:/app
     command: "bash -c 'cd paid_webtorrent && npm run start-seeder'"
     networks:
-      - net1
-    # network_mode: host
+      net1:
+        ipv4_address: 172.5.0.2
     # environment:
     #   DEBUG: '*'
+    # network_mode: host
 
   leecher0:
     container_name: bchack_leecher0
@@ -24,13 +25,14 @@ services:
       - ../:/app
     command: "bash -c 'cd paid_webtorrent && npm run start-leecher'"
     networks:
-      - net1
+      net1:
+        ipv4_address: 172.5.0.3
 
-    # network_mode: host
     # environment:
     #   DEBUG: '*'
+    # network_mode: host
 
-  ganache:
+  ganache: # XXX: has to be started before any webtorrent client
     container_name: ganache
     build:
       context: ./
@@ -39,8 +41,14 @@ services:
       - ../:/app
     command: "bash -c 'cd playground/local; (sleep 5 && npm run deploy) & (npm run start)'"
     networks:
-      - net1
+      net1:
+        ipv4_address: 172.5.0.4
+        # network_mode: host
 
 networks:
   net1:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.5.0.0/16
+          gateway: 172.5.0.1

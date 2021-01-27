@@ -4,6 +4,8 @@ import {SCClient} from 'exwebtorrent/lib/scclient'
 import {logger} from '../lib/logger'
 import {StateChannelsPayment, Wallet} from "statechannel"
 import {Wire} from 'bittorrent-protocol'
+import { ethers } from "ethers";
+const {BigNumber} = ethers;
 
 
 export class PaidWTClient extends SCClient {
@@ -82,6 +84,9 @@ export class PaidWTClient extends SCClient {
       this.channel.on("handshakeBack", async (from: string, handshakeId: string) => {
         logger.info('leecher got handshakeBack Id: %s, from %s', handshakeId, from)
         wire.peer_address = from
+        const DEPOSIT_AMOUNT = "500000000000000000000000";
+        const payload = await this.channel.deposit(wire.peer_address, BigNumber.from(DEPOSIT_AMOUNT));
+        this._send_payload(wire, payload, 'deposit')
       })
       wire.ut_sidetalk.on('sc handshake', (wire, payload) => {
         this._rcvd_payload(wire, payload)

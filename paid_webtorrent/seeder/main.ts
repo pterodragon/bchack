@@ -12,7 +12,7 @@ async function main() {
   const provider = new ethers.providers.JsonRpcProvider(
     `http://${process.env.GANACHE_HOST}:${process.env.GANACHE_PORT}`
   );
-  logger.debug('provider %o', provider)
+  await provider.ready
 
   const wallet = new LocalWallet(provider, ETHERLIME_ACCOUNTS[0].privateKey);
 
