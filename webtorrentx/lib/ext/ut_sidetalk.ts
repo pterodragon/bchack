@@ -1,9 +1,8 @@
 import {Extension, Wire} from 'bittorrent-protocol'
-import {ExTorrent} from '../lib/extorrent'
-import EventEmitter from 'eventemitter3'
-import {logger} from '../lib/logger'
-import {SCClient} from '../lib/scclient'
+import {EventEmitter} from 'events'
+import debug from 'debug';
 
+const log = debug('ut_sidetalk');
 
 export interface ut_sidetalk_opts {
   is_seeder?: boolean
@@ -44,6 +43,46 @@ export class ut_sidetalk extends EventEmitter implements Extension {
     }
   }
 
+  set_cbs(scclient: SCClient, torrent: ExTorrent) : void {
+    this.wire.on('handshake', (...args) => {
+      log('handshake')
+    })
+    this.wire.on('choke', () => {
+    })
+    this.wire.on('timeout', () => {
+      scclient._onTorrentEvent(torrent, this.wire, 'timeout')
+    })
+    this.wire.on('close', () => {
+      scclient._onTorrentEvent(torrent, this.wire, 'close')
+    })
+    this.wire.on('have', (index) => {
+      scclient._onTorrentEvent(torrent, this.wire, 'have', index)
+    })
+    this.wire.on('upload', (buf_len) => {
+      // served a piece
+      this.consume_pieces(1)
+      // wrapped `piece` method
+      // scclient._onTorrentEvent(torrent, this.wire, 'upload', buf_len)
+    })
+    this.wire.on('interested', () => {
+      scclient._onTorrentEvent(torrent, this.wire, 'interested')
+    })
+    this.wire.on('uninterested', () => {
+      scclient._onTorrentEvent(torrent, this.wire, 'uninterested')
+    })
+    this.wire.on('request', (index, offset, length, cb) => {
+      scclient._onTorrentEvent(torrent, this.wire, 'request', index, offset, length, cb)
+    })
+    this.wire.on('extended', (ext, buf) => {
+    })
+    this.wire.on('piece', (index, offset, buffer) => {
+      scclient._onTorrentEvent(torrent, this.wire, 'piece', index, offset)
+    })
+    this.wire.on('bitfield', (peerPieces) => {
+      scclient._onTorrentEvent(torrent, this.wire, 'bitfield', peerPieces)
+    })
+  }
+
   constructor(wire: Wire) {
     super()
     this.wire = wire
@@ -59,11 +98,10 @@ export class ut_sidetalk extends EventEmitter implements Extension {
 
   onMessage(buf: Buffer): void {
     const msg = JSON.parse(buf.toString())
-    logger.debug('ut_sidetalk onMessage: %o', msg)
+    log('ut_sidetalk onMessage:', msg)
     if (msg.tag) {
       this.emit(msg.tag, this.wire, msg.payload)
       if (msg.tag == 'topup') {
-        logger.info('topping up')
         this.topup_pieces(100)
       }
     }
@@ -71,7 +109,7 @@ export class ut_sidetalk extends EventEmitter implements Extension {
 
   send(tag: string, value: object): void {
     value['tag'] = tag
-    logger.debug('ut_sidetalk send (%s, %o)', tag, value)
+    log('ut_sidetalk send', tag, value);
     const buf = Buffer.from(JSON.stringify(value))
     this.wire.extended(this.name, buf)
   }
