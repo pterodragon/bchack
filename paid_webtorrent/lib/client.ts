@@ -97,7 +97,9 @@ export class PaidWTClient extends SCClient {
 
     const torrent = await new Promise((resolve, reject) => {
       try {
-        return this.add(magnet_uri, (torrent) => resolve)
+        return this.add(magnet_uri, {
+          announce: [ 'http://seeder:41234', 'udp://seeder:41234', 'ws://seeder:41234' ]
+        }, (torrent) => resolve)
       } catch (err) {
         reject(err)
       }

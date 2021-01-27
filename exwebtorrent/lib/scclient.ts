@@ -13,8 +13,15 @@ export class SCClient extends EventEmitter implements ut_control {
 
   constructor(extorrent_opts?: ExtorrentOpts) {
     super()
-    this.webtorrent = new WebTorrent(),
     this.extorrent_opts = extorrent_opts || {}
+    const {ut_sidetalk_opts: {is_leecher, is_seeder}} = this.extorrent_opts
+    const webtorrent_opts = {dht: {timeBucketOutdated: 60000}, dhtPort: 41234}
+    if (is_leecher) {
+      webtorrent_opts.dht['host'] = 'seeder'
+      webtorrent_opts.dht['bootstrap'] = 'seeder:41234'
+    }
+
+    this.webtorrent = new WebTorrent(webtorrent_opts)
   }
 
   seed(input, opts, onseed): ExTorrent {
@@ -22,7 +29,7 @@ export class SCClient extends EventEmitter implements ut_control {
     return new ExTorrent(this.webtorrent.seed(input, opts, onseed), this, this.extorrent_opts)
   }
 
-  add(torrentId, opts = {}, ontorrent = () => {}): ExTorrent {
+  add(torrentId, opts, ontorrent): ExTorrent {
     logger.info('SCClient add: %s', torrentId)
     return new ExTorrent(this.webtorrent.add(torrentId, opts, ontorrent), this, this.extorrent_opts)
   }
