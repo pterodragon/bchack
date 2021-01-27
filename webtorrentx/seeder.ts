@@ -2,6 +2,7 @@ import WebTorrent, {Torrent} from 'webtorrent';
 import debug from 'debug';
 import {SidetalkExtension} from './lib/sidetalk';
 import * as utils from './lib/utils';
+import {WireController} from './lib/control';
 
 const log = debug('wx.seeder');
 
@@ -22,6 +23,7 @@ async function main() {
   });
 
   const wire = await utils.onWire(torrent);
+  const control = new WireController(wire);
   const sidetalk = await SidetalkExtension.extend(wire);
   sidetalk.on('handshake', (handshake)=> {
     log('handshake', handshake);

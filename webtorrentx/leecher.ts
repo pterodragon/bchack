@@ -8,7 +8,7 @@ const log = debug('wx.leecher');
 async function main() {
   const client = new WebTorrent();
 
-  const magnetURI = 'magnet:?xt=urn:btih:3ed0ed882486762b9e595b9d0ced28d6c1f1faa3&dn=sintel.mp4';
+  const magnetURI = 'magnet:?xt=urn:btih:e9e24ff201afa245d79620f803f280307e319ab9&dn=sintel.mp4';
   const torrent = client.add(magnetURI);
   torrent.on('download', (bytes: number) => {
     log('download', bytes);
