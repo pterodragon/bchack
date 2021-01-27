@@ -1,5 +1,5 @@
 import { ethers, Signer, Wallet as EthWallet } from "ethers";
-import { Wallet } from '../lib/wallet';
+import { Wallet } from './wallet';
 
 export class LocalWallet implements Wallet {
   private _provider: ethers.providers.BaseProvider;

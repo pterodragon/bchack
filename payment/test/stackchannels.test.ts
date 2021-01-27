@@ -4,7 +4,7 @@ const {BigNumber} = ethers;
 import { ETHERLIME_ACCOUNTS } from "@statechannels/devtools";
 import {StateChannel} from "../lib/statechannel";
 import { StateChannelsPayment } from "../lib/statechannels";
-import {LocalWallet} from "./localwallet";
+import {LocalWallet} from "../lib/wallet/local";
 
 /* Set up an ethereum provider connected to our local blockchain */
 const provider = new ethers.providers.JsonRpcProvider(
