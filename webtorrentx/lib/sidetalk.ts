@@ -4,6 +4,7 @@ import debug from 'debug';
 
 const log = debug('wx.sidetalk');
 const EXTENSION_NAME = "ut_sidetalk";
+const EXTENSION_ID = 3;
 
 const utSidetalk = ()=> {
   //Extension class requires a "name" property on the prototype
@@ -26,19 +27,28 @@ export class SidetalkExtension extends EventEmitter implements Extension {
 
   send(obj: object): void { 
     log('send', obj);
-    const buf = Buffer.from(JSON.stringify(obj));
+    const buf = encode(obj);
     this.wire.extended(this.name, buf);
   }
 
-  //can use wire.sidetalk after calling extend() on it
-  static extend(wire: Wire): SidetalkExtension {
+  /** 
+   * can use wire.sidetalk after calling extend() on it
+   */
+  //TODO: make this async return after extended handshake?
+  static async extend(wire: Wire): Promise<SidetalkExtension> {
     //log('torrent bitfield', [torrent.bitfield]);
-    log('use sidetalk');
     //wire.setTimeout(24 * 60 * 60);
+    log('use sidetalk');
     wire.use(utSidetalk());
-    //workaround: see node_modules/bittorrent-protocol/index.js:373
-    wire.peerExtendedMapping[EXTENSION_NAME] = wire._nextExt-1;
-    return  wire[EXTENSION_NAME];
+    const handle = wire[EXTENSION_NAME];
+
+    wire.extended(0, {m: {[EXTENSION_NAME]: EXTENSION_ID}});
+    await new Promise(resolv=>handle.on('handshake', (shake:{m: number})=> {
+      //extension registered after handshake
+      if (shake.m[EXTENSION_NAME]) resolv(shake);
+    }));
+
+    return handle;
   }
 
   //--------------------------------------------------
@@ -53,3 +63,6 @@ export class SidetalkExtension extends EventEmitter implements Extension {
   }
 }
 
+function encode(obj: object) {
+  return Buffer.from(JSON.stringify(obj));
+}

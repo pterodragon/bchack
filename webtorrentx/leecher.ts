@@ -18,12 +18,12 @@ async function main() {
   });
 
   const wire = await utils.onWire(torrent);
-  const sidetalk = SidetalkExtension.extend(wire);
-  sidetalk.on('message', (msg)=> {
-    log('message', msg);
-  });
+  const sidetalk = await SidetalkExtension.extend(wire);
   sidetalk.on('handshake', (handshake)=> {
     log('handshake', handshake);
+  })
+  sidetalk.on('message', (msg)=> {
+    log('message', msg);
   });
   sidetalk.send({msg1: 'byebye'});
 
