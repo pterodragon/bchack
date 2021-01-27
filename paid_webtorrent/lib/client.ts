@@ -18,6 +18,9 @@ export class PaidWTClient extends SCClient {
     this.channel = new StateChannelsPayment(wallet)
   }
 
+  start_request_fund(wire) {
+  }
+
   async run_seeder() {
     const filepath = process.env.SEED_FILEPATH
 
@@ -26,6 +29,10 @@ export class PaidWTClient extends SCClient {
       if (!is_seeder) {
         return
       }
+      this.channel.on('deposited', (address, amount)=> {
+        // TODO verify address & amount
+        this.start_request_fund(wire);
+      })
       this.channel.on("handshake", async (from: string, handshakeId: string) => {
         logger.info('seeder got handshakeId: %s, from %s', handshakeId, from)
         wire.peer_address = from
@@ -84,8 +91,9 @@ export class PaidWTClient extends SCClient {
       this.channel.on("handshakeBack", async (from: string, handshakeId: string) => {
         logger.info('leecher got handshakeBack Id: %s, from %s', handshakeId, from)
         wire.peer_address = from
-        const DEPOSIT_AMOUNT = "500000000000000000000000";
-        const payload = await this.channel.deposit(wire.peer_address, BigNumber.from(DEPOSIT_AMOUNT));
+        const DEPOSIT_AMOUNT = "5000000000000";
+        logger.info('deposit: %s, %o', wire.peer_address, BigNumber.from(DEPOSIT_AMOUNT))
+        const payload = await this.channel.deposit(wire.peer_address, BigNumber.from(DEPOSIT_AMOUNT))
         this._send_payload(wire, payload, 'deposit')
       })
       wire.ut_sidetalk.on('sc handshake', (wire, payload) => {
