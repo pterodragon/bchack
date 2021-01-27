@@ -1,7 +1,7 @@
 {
   "name": "payment-ui",
   "version": "1.0.0",
-  "main": "src/index.js",
+  "main": "index.js",
   "license": "MIT",
   "scripts": {
     "react-start": "parcel -p 3000 index.html --out-dir build",
