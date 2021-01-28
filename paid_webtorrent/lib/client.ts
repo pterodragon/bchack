@@ -11,7 +11,7 @@ const {BigNumber} = ethers;
 export class PaidWTClient extends SCClient {
   private wallet: Wallet
   private channel: StateChannelsPayment
-  private check_fund_timeout = 10000
+  private check_fund_timeout = 5000
   private request_fund_handle = undefined
 
   constructor(wallet: Wallet, ...args) {
@@ -41,6 +41,9 @@ export class PaidWTClient extends SCClient {
     const filepath = process.env.SEED_FILEPATH
 
     const {ut_sidetalk_opts: {is_leecher, is_seeder}} = this.extorrent_opts
+    this.on('peer-uninterested', (wire: Wire) => {
+      clearInterval(this.request_fund_handle)
+    })
     this.on('established', (wire: Wire) => {
       if (!is_seeder) {
         return
