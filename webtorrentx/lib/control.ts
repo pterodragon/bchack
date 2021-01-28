@@ -1,20 +1,29 @@
 import {Wire} from "bittorrent-protocol";
 import createDebug from 'debug'
 
-const debug = createDebug('wx.control');
-const DUMMY = (...args)=>debug('pausing');
+const log = createDebug('wx.control');
 
-type Piece = (index: number, offset: number, buffer: Buffer) => void;
+declare type PIECE_ARGS = [index: number, offset: number, buffer: Buffer];
 
-export class WireControl {
-  #piece: Piece;
-  #queue: [number, number, Buffer][] = [];
-
+/**
+ * take the control of piece for wire
+ * if not calling next(), the wire would not process to next piece
+ */
+export class WireController {
+  #queue: PIECE_ARGS[] = [];
+  #piece: (...args: PIECE_ARGS)=>void; 
   constructor(private readonly wire: Wire) {
     this.#piece = wire.piece;
-    wire.piece = (...arg) => {
-      this.#queue.push(arg);
+    wire.piece = (...args) => {
+      log('piece', args&&args[0]);
+      this.#queue.push(args);
     };
+  }
+
+  release() {
+    while (this.next()) {}
+    this.wire.piece = this.#piece.bind(this.wire);
+    this.#piece = (...args)=>log('pausing');
   }
 
   next() {
@@ -23,13 +32,6 @@ export class WireControl {
     this.#piece.call(this.wire, ...args);
     return true;
   }
-
-  release() {
-    while (this.next()) {}
-    this.wire.piece = this.#piece.bind(this.wire);
-    this.#piece = DUMMY;
-  }
-
 
 }
 

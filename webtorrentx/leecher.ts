@@ -17,7 +17,8 @@ async function main() {
     log('upload', bytes);
   });
 
-  torrent.once('wire', async(wire: Wire) => {
+  torrent.on('wire', async(wire: Wire) => {
+    log('wire', wire.peerId);
     wire.setKeepAlive(true);
 
     const sidetalk = await SidetalkExtension.extend(wire);
