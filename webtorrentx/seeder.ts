@@ -1,20 +1,21 @@
-import WebTorrent, {Torrent} from 'webtorrent';
+import WebTorrent, {Torrent, Options as WebTorrentOptions} from 'webtorrent';
 import debug from 'debug';
+import {Wire} from 'bittorrent-protocol';
 import {SidetalkExtension} from './lib/sidetalk';
-import * as utils from './lib/utils';
-import {WireController} from './lib/control';
+import {WireControl} from './lib/control';
 
 const log = debug('wx.seeder');
 
 async function main() {
   const client = new WebTorrent();
 
-  const filepath = './data/sintel.mp4';
+  const filepath = './data/sample.mp4';
   const opts = {announce: []}  // disable default public trackers
   const torrent = client.seed(filepath, opts);
   torrent.on('ready', () => {
     log('ready', torrent.magnetURI)
-  })
+  });
+
   torrent.on('download', (bytes: number) => {
     log('download', bytes);
   });
@@ -22,17 +23,25 @@ async function main() {
     log('upload', bytes);
   });
 
-  const wire = await utils.onWire(torrent);
-  const control = new WireController(wire);
-  const sidetalk = await SidetalkExtension.extend(wire);
-  sidetalk.on('handshake', (handshake)=> {
-    log('handshake', handshake);
-  })
-  sidetalk.on('message', (msg)=> {
-    log('message', msg);
+  torrent.once('wire', async(wire: Wire) => {
+    wire.setKeepAlive(true);
+
+    const sidetalk = await SidetalkExtension.extend(wire);
+    sidetalk.on('handshake', (handshake)=> {
+      log('handshake', handshake);
+    })
+
+    const control = new WireControl(wire);
+    sidetalk.on('message', (msg:any)=> {
+      log('message', msg, torrent.done);
+      if (msg.next) {
+        control.next();
+      }
+    });
   });
-  sidetalk.send({dummy: 'hihi'});
+
 
 }
+
 
 main();

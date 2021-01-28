@@ -37,12 +37,13 @@ export class SidetalkExtension extends EventEmitter implements Extension {
   //TODO: make this async return after extended handshake?
   static async extend(wire: Wire): Promise<SidetalkExtension> {
     //log('torrent bitfield', [torrent.bitfield]);
-    //wire.setTimeout(24 * 60 * 60);
+    wire.setTimeout(24 * 60 * 60);
     log('use sidetalk');
     wire.use(utSidetalk());
+    //wire.peerExtendedMapping[EXTENSION_NAME] = wire._nextExt - 1;
     const handle = wire[EXTENSION_NAME];
 
-    wire.extended(0, {m: {[EXTENSION_NAME]: EXTENSION_ID}});
+    //wire.extended(0, {m: {[EXTENSION_NAME]: EXTENSION_ID}});
     await new Promise(resolv=>handle.on('handshake', (shake:{m: number})=> {
       //extension registered after handshake
       if (shake.m[EXTENSION_NAME]) resolv(shake);
