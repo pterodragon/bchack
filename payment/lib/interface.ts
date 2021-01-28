@@ -10,7 +10,7 @@ export declare interface PaymentInterface<Payload> {
   on(event: 'finalized', listener: (address: string, log:any)=>void): this;
 
   deposit(address: string, amount: BigNumber): Promise<Payload>;
-  received(payload: Payload): Promise<any>;
+  received(payload: Payload, meta?: any): Promise<any>;
   handshake(id: string, address?: string): Promise<Payload>;
   request(address: string, amount: BigNumber): Promise<Payload>;
   finalize(address: string): Promise<Payload>

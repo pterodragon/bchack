@@ -66,22 +66,22 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
     };
   }
 
-  async received({from, type, signed, event} : Payload) {
+  async received({from, type, signed, event} : Payload,  meta?: any) {
     const myaddress = await this.address;
     switch(type) {
       case 'handshake': {
         if (signed) {
           const statechannel = StateChannel.createFromState(this._wallet, event.channelId, from, signed);
           this._channels.set(from, statechannel);
-          return this.emit("handshakeBack", from, event.handshakeId, event.channelId);
+          return this.emit("handshakeBack", from, event.handshakeId, event.channelId, meta);
         }
-        return this.emit("handshake", from, event.handshakeId);
+        return this.emit("handshake", from, event.handshakeId, meta);
       }
 
       case 'deposit': {
         const statechannel = this.getChannel(from);
         statechannel.update(from, signed);
-        return this.emit("deposited", from, BigNumber.from(event.amount));
+        return this.emit("deposited", from, BigNumber.from(event.amount), meta);
       }
 
       case 'request': {
@@ -98,13 +98,13 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
           },
           event: {amount: event.amount}
         });
-        return this.emit("requested", from, BigNumber.from(event.amount), response);
+        return this.emit("requested", from, BigNumber.from(event.amount), response, meta);
       }
 
       case 'transfer': {
         const statechannel = this.getChannel(from);
         statechannel.update(from, signed);
-        return this.emit("received", from, BigNumber.from(event.amount));
+        return this.emit("received", from, BigNumber.from(event.amount), meta);
       }
 
       case 'finalize': {
@@ -116,7 +116,7 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
         }
         if (statechannel.isConcludable()) {
           const log = await statechannel.conclude();
-          return this.emit("finalized", from, log);
+          return this.emit("finalized", from, log, meta);
         }
       }
     }
