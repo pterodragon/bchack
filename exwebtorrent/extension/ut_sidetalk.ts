@@ -17,6 +17,11 @@ export class ut_sidetalk extends EventEmitter implements Extension {
   private _wire_paused = false
   private _opts?: ut_sidetalk_opts
   private _allowed_pieces = 0
+  static REQUEST_FUND_THRESHOLD_ALLOWED_PIECES = 100
+
+  get allowed_pieces(): number {
+    return this._allowed_pieces
+  }
 
   get wire_paused(): boolean {
     return this._wire_paused
@@ -25,8 +30,15 @@ export class ut_sidetalk extends EventEmitter implements Extension {
     this._wire_paused = b
   }
 
+  private is_underfunded(): boolean {
+    return this.allowed_pieces < ut_sidetalk.REQUEST_FUND_THRESHOLD_ALLOWED_PIECES
+  }
+
   consume_pieces(n: number) {
     this._allowed_pieces -= n
+    if (this.is_underfunded()) {
+      this.emit('underfunded', this.wire)
+    }
     this._set_pause_status()
   }
 

@@ -10,8 +10,8 @@ services:
       - ./:/app
     command: "npm run start-seeder"
     network_mode: host
-    # environment:
-    #   DEBUG: '*'
+    environment:
+      DEBUG: '*'
 
   leecher0:
     container_name: bchack_leecher0
@@ -22,8 +22,8 @@ services:
       - ./:/app
     command: "npm run start-leecher"
     network_mode: host
-    # environment:
-    #   DEBUG: '*'
+    environment:
+      DEBUG: '*'
 
     # leecher1:
     #   container_name: bchack_leecher1

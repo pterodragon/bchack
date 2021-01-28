@@ -11,6 +11,8 @@ const {BigNumber} = ethers;
 export class PaidWTClient extends SCClient {
   private wallet: Wallet
   private channel: StateChannelsPayment
+  private check_fund_timeout = 10000
+  private request_fund_handle = undefined
 
   constructor(wallet: Wallet, ...args) {
     super(...args)
@@ -18,7 +20,19 @@ export class PaidWTClient extends SCClient {
     this.channel = new StateChannelsPayment(wallet)
   }
 
+  private request_fund_if_underfunded(wire) {
+    if (wire.ut_sidetalk.is_underfunded()) {
+    }
+  }
+
   start_request_fund(wire) {
+    this.request_fund_handle = setInterval(() => {
+      this.request_fund_if_underfunded(wire)
+    }, this.check_fund_timeout)
+    // const payload = await this.channel.request(leecherAddress, BigNumber.from(REQUEST_AMOUNT));
+    // await sendToLeecher(payload);
+
+    // wire.ut_sidetalk.send(', {'payload': payload})
   }
 
   async run_seeder() {
@@ -111,7 +125,7 @@ export class PaidWTClient extends SCClient {
     const torrent = await new Promise((resolve, reject) => {
       try {
         return this.add(magnet_uri, {
-          announce: [ 'http://seeder:41234', 'udp://seeder:41234', 'ws://seeder:41234' ]
+          announce: []
         }, (torrent) => resolve)
       } catch (err) {
         reject(err)

@@ -12,8 +12,8 @@ services:
     networks:
       net1:
         ipv4_address: 172.5.0.2
-    # environment:
-    #   DEBUG: '*'
+        # environment:
+        #   DEBUG: '*'
     # network_mode: host
 
   leecher0:
@@ -23,13 +23,13 @@ services:
       dockerfile: ./Dockerfile
     volumes:
       - ../:/app
-    command: "bash -c 'cd paid_webtorrent && npm run start-leecher'"
+    command: "bash -c 'sleep 10 && cd paid_webtorrent && npm run start-leecher'"
     networks:
       net1:
         ipv4_address: 172.5.0.3
 
-    # environment:
-    #   DEBUG: '*'
+        # environment:
+        #   DEBUG: '*'
     # network_mode: host
 
   ganache: # XXX: has to be started before any webtorrent client
@@ -44,6 +44,19 @@ services:
       net1:
         ipv4_address: 172.5.0.4
         # network_mode: host
+
+        #   dht:
+        #     container_name: dht
+        #     build:
+        #       context: ./
+        #       dockerfile: ./Dockerfile
+        #     volumes:
+        #       - ../:/app
+        #     command: "bash -c 'cd paid_webtorrent && npm run start-dht'"
+        #     networks:
+        #       net1:
+        #         ipv4_address: 172.5.0.5
+
 
 networks:
   net1:
