@@ -23,7 +23,8 @@ services:
       dockerfile: ./Dockerfile
     volumes:
       - ../:/app
-    command: "bash -c 'sleep 10 && cd paid_webtorrent && npm run start-leecher'"
+    # leecher DHT has to wait for seeder DHT to listen first for bootstrapping?
+    command: "bash -c 'cd paid_webtorrent && npm run start-leecher'"
     networks:
       net1:
         ipv4_address: 172.5.0.3

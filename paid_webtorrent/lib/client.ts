@@ -22,6 +22,12 @@ export class PaidWTClient extends SCClient {
 
   private request_fund_if_underfunded(wire) {
     if (wire.ut_sidetalk.is_underfunded()) {
+      (async () => {
+        const REQUEST_AMOUNT = "5000000000";
+        const payload = await this.channel.request(wire.peer_address, BigNumber.from(REQUEST_AMOUNT));
+        this._send_payload(wire, payload, 'sc handshake')
+      }
+      )();
     }
   }
 
@@ -29,10 +35,6 @@ export class PaidWTClient extends SCClient {
     this.request_fund_handle = setInterval(() => {
       this.request_fund_if_underfunded(wire)
     }, this.check_fund_timeout)
-    // const payload = await this.channel.request(leecherAddress, BigNumber.from(REQUEST_AMOUNT));
-    // await sendToLeecher(payload);
-
-    // wire.ut_sidetalk.send(', {'payload': payload})
   }
 
   async run_seeder() {
@@ -47,6 +49,11 @@ export class PaidWTClient extends SCClient {
         // TODO verify address & amount
         this.start_request_fund(wire);
       })
+      this.channel.on("received", (from, amount)=> {
+        // TODO verify address & amount
+        this.allow(wire, 200)
+      });
+
       this.channel.on("handshake", async (from: string, handshakeId: string) => {
         logger.info('seeder got handshakeId: %s, from %s', handshakeId, from)
         wire.peer_address = from
@@ -56,9 +63,12 @@ export class PaidWTClient extends SCClient {
       wire.ut_sidetalk.on('sc handshake', (wire, payload) => {
         this._rcvd_payload(wire, payload)
       })
-
-      this.channel.on('deposited', (address, amount)=> {
-      });
+      wire.ut_sidetalk.on('deposit', (wire, payload) => {
+        this._rcvd_payload(wire, payload)
+      })
+      wire.ut_sidetalk.on('pay', (wire, payload) => {
+        this._rcvd_payload(wire, payload)
+      })
     })
 
 
@@ -110,6 +120,11 @@ export class PaidWTClient extends SCClient {
         const payload = await this.channel.deposit(wire.peer_address, BigNumber.from(DEPOSIT_AMOUNT))
         this._send_payload(wire, payload, 'deposit')
       })
+      this.channel.on("requested", async(from, amount, agree)=> {
+        // TODO check if it's sane request
+        const payload = await agree();
+        this._send_payload(wire, payload, 'pay')
+      });
       wire.ut_sidetalk.on('sc handshake', (wire, payload) => {
         this._rcvd_payload(wire, payload)
       })
