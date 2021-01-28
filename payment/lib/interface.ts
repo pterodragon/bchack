@@ -13,7 +13,7 @@ export declare interface PaymentInterface<Payload> {
   received(payload: Payload): Promise<any>;
   handshake(id: string, address?: string): Promise<Payload>;
   request(address: string, amount: BigNumber): Promise<Payload>;
-  finalize(address: string, remain: BigNumber): Promise<Payload>
+  finalize(address: string): Promise<Payload>
   //hasCredit(address: string, amount: string): Promise<boolean>;
 }
 

@@ -1,0 +1,53 @@
+{
+  "name": "client-ui",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "license": "MIT",
+  "scripts": {
+    "react-start": "parcel -p 3000 index.html --out-dir build",
+    "react-build": "parcel build index.html --out-dir build --public-url ./",
+    "clean-build": "rm -rf build/ .cache dist/",
+    "build": "yarn clean-build && yarn react-build",
+    "start": "yarn react-start"
+  },
+  "dependencies": {
+    "@material-ui/core": "^4.0.0",
+    "@material-ui/data-grid": "^4.0.0-alpha.17",
+    "@material-ui/icons": "^4.11.2",
+    "@portis/web3": "^3.0.3",
+    "@types/react": "^16.8.6 || ^17.0.0",
+    "@web3-react/core": "^6.1.1",
+    "axios": "latest",
+    "jwt-decode": "^3.1.2",
+    "prop-types": "latest",
+    "react": "^16.8.0 || ^17.0.0",
+    "react-dom": "^16.8.0 || ^17.0.0",
+    "react-redux": "^7.2.2",
+    "react-router-dom": "latest",
+    "redux": "latest",
+    "redux-thunk": "latest",
+    "webtorrentx-paid": "file:../webtorrentx-paid"
+  },
+  "devDependencies": {
+    "babel-core": "latest",
+    "babel-plugin-transform-class-properties": "latest",
+    "babel-plugin-transform-object-rest-spread": "latest",
+    "babel-plugin-transform-react-jsx": "latest",
+    "babel-preset-env": "latest",
+    "babel-preset-react": "latest",
+    "parcel-bundler": "latest",
+    "typescript": "^4.1.3"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

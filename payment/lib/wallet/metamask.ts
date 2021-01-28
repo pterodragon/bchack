@@ -19,10 +19,10 @@ export class MetamaskWallet extends EventEmitter implements Wallet {
     }
     this._address = (async() => {
       await window.ethereum.enable();
+      console.log('ethereum', window.ethereum);
       const provider = this._provider = new ethers.providers.Web3Provider(window.ethereum);
       this._signer = provider.getSigner();
-      //@ts-ignore
-      const address = window.ethereum.getSelectedAddress;
+      const address = window.ethereum.selectedAddress;
       this.emit("login", address);
       return address;
   })();
@@ -30,6 +30,7 @@ export class MetamaskWallet extends EventEmitter implements Wallet {
   }
   
   open(): void {
+    this.getAddress();
   }
 
   getSigner(): Signer {
