@@ -22,13 +22,10 @@ export class MetamaskWallet extends EventEmitter implements Wallet {
       const provider = this._provider = new ethers.providers.Web3Provider(window.ethereum);
       this._signer = provider.getSigner();
       //@ts-ignore
-      if (web3) {
-        //@ts-ignore
-        const address = web3.eth.accounts[0];
-        this.emit("login", address);
-        return address;
-      }
-    })();
+      const address = window.ethereum.getSelectedAddress;
+      this.emit("login", address);
+      return address;
+  })();
 
   }
   

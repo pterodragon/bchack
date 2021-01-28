@@ -1,5 +1,5 @@
 {
-  "name": "statechannel",
+  "name": "payment-statechannel",
   "version": "1.0.0",
   "main": "dist/index.js",
   "license": "MIT",
@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "@ethersproject/experimental": "^5.0.7",
-    "@portis/web3": "^3.0.2",
     "@statechannels/nitro-protocol": "^0.12.0",
     "debug": "^4.3.1",
     "ethers": "^5.0.26",
-    "web3": "^1.3.1"
+    "web3": "^1.3.1",
+    "@portis/web3": "^3.0.2"
   },
   "devDependencies": {
     "@statechannels/devtools": "^0.5.2",
