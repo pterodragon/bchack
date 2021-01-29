@@ -1,20 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter as Router } from "react-router-dom";
-import App from "./App";
-import {Leecher} from '../lib/leecher';
+import store from "./redux/store";
+import { Provider } from "react-redux";
 import WebTorrent, {Torrent} from 'webtorrent-hybrid';
+import App from "./App";
 
-//import {PortisWallet} from "../lib/portis";
-import {MetamaskWallet} from "payment-statechannel";
-const debug = require('debug');
-debug.enable();
-debug.log = console.info.bind(console);
+//for debug
+global.store = store;
 
-
-//const wallet = new PortisWallet(process.env.DAPP_ADDRESS, process.env.DAPP_NETWORK);
-const wallet = new MetamaskWallet();
-global.wallet = wallet;
 
 (typeof global === 'undefined' ? window : global).WEBTORRENT_ANNOUNCE = null;
 
@@ -33,17 +27,13 @@ global.logTorrent = (torrent)=> {
 };
 */
 
-const leecher = new Leecher(client, wallet);
-global.leecher = leecher;
-
-wallet.open();
-wallet.on('login', async(address) => {
-  console.log('run leecher for', {address});
-});
 
 ReactDOM.render(
   <Router>
-    <App portis={wallet._portis}/>
+    <Provider store={store}>
+      <App/>
+    </Provider>
   </Router>,
   document.getElementById("root")
 );
+
