@@ -10,7 +10,7 @@ dotenv.config();
 import {StateChannelsPayment, LocalWallet} from 'payment-statechannel';
 
 const log = createDebug('wxp.seeder');
-const PIECE_PRICE = utils.parseUnits("10000", "gwei");
+const PIECE_PRICE = utils.parseUnits("1", "wei");
 main();
 
 
@@ -58,8 +58,7 @@ async function main() {
     wire.setKeepAlive(true);
 
     const control = WireControl.extend(wire);
-    const sidetalk = await WireSidetalk.extend(wire);
-
+    const sidetalk = WireSidetalk.extend(wire);
     sidetalk.on('handshake', async(handshake)=> {
       log('handshake', handshake);
     })
@@ -75,7 +74,7 @@ async function main() {
       if (!address) return log(`address of wire ${wire.peerId} not found`);
 
       const payload = await payment.request(address, PIECE_PRICE);
-      sidetalk.send({payload});
+      await sidetalk.send({payload});
     });
   });
 

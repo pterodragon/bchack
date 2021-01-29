@@ -2,17 +2,13 @@ import {Instance as IWebTorrent, Torrent} from 'webtorrent';
 import {Wire} from "bittorrent-protocol";
 import {ethers, BigNumber, utils} from 'ethers';
 import createDebug from 'debug';
-import {WireSidetalk}  from 'webtorrentx';
+import {WireSidetalk}  from './webtorrentx';
 //assume client side handle the dotenv import
-import {StateChannelsPayment, PaymentInterface, Wallet} from 'payment-statechannel';
+import {StateChannelsPayment, PaymentInterface, Wallet} from './payment-statechannel';
 
-const debug = createDebug('wxp.leecher');
-const log = (...args)=> {
-  //@ts-ignore
-  debug(...args);
-  console.log(...args);
-}
-const PIECE_PRICE = utils.parseUnits("10000", "gwei");
+const log = createDebug('wxp.leecher');
+
+const PIECE_PRICE = utils.parseUnits("1", "wei");
 
 export class Leecher {
   payment: PaymentInterface<any>;
@@ -26,14 +22,14 @@ export class Leecher {
       const length = wire.length || 100;
       delete wire.length;
       const payload = await payment.deposit(from, PIECE_PRICE.mul(length));
-      wire.ut_sidetalk.send({payload});
+      await wire.ut_sidetalk.send({payload});
     });
     payment.on("requested", async(from, amount, agree, wire)=> {
       log(`leecher received a request of ${amount} from ${from}`);
 
       //leecher agrees on the amount and response
       const payload =  await agree();
-      wire.ut_sidetalk.send({payload});
+      await wire.ut_sidetalk.send({payload});
     });
   }
 
@@ -50,31 +46,21 @@ export class Leecher {
       wire.setKeepAlive(true);
       wire.length = torrent.length;
 
-      const sidetalk = await WireSidetalk.extend(wire);
+      const sidetalk = WireSidetalk.extend(wire);
       sidetalk.on('handshake', async(handshake)=> {
-        log('handshake', handshake);
+        log(`wire handshake with id=${wire.peerId}`);
+        const payload = await payment.handshake(wire.peerId);
+        await sidetalk.send({payload});
       })
       sidetalk.on('message', (msg: {payload?: any})=> {
         if (msg.payload) {
           payment.received(msg.payload, wire);
         }
       });
-      log(`wire handshake with id=${wire.peerId}`);
-      const payload = await payment.handshake(wire.peerId);
-      sidetalk.send({payload});
-
-      wire.on('piece', async (index, offset, length)=> {
-        log(`piece ${index} ${offset} ${length}`);
-        const {address} = wire;
-        if (!address) return (`address of wire ${wire.peerId} not found`);
-
-        const payload = await payment.request(address, PIECE_PRICE);
-        sidetalk.send({payload});
-      });
 
       wire.on('uninterested', async() => {
         const payload = await payment.finalize(wire.address);
-        sidetalk.send({payload});
+        await sidetalk.send({payload});
         delete wire.address;
       });
 

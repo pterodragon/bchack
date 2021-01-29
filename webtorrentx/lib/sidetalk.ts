@@ -20,12 +20,16 @@ export interface WireSidetalk {
 
 export class WireSidetalk extends EventEmitter implements Extension {
   name: string = EXTENSION_NAME
+  #handshaked: Promise<any>;
+  #handshaked_resolv: any;
 
   constructor(protected readonly wire: Wire) {
     super();
+    this.#handshaked = new Promise(resolv=>this.#handshaked_resolv = resolv);
   }
 
-  send(obj: object): void { 
+  async send(obj: object) { 
+    await this.#handshaked;
     log('send', obj);
     const buf = encode(obj);
     this.wire.extended(this.name, buf);
@@ -35,27 +39,26 @@ export class WireSidetalk extends EventEmitter implements Extension {
    * can use wire.sidetalk after calling extend() on it
    */
   //TODO: make this async return after extended handshake?
-  static async extend(wire: Wire): Promise<WireSidetalk> {
+  static extend(wire: Wire): WireSidetalk {
     //log('torrent bitfield', [torrent.bitfield]);
-    wire.setTimeout(24 * 60 * 60);
+    wire.setTimeout(24 * 60 * 60 * 1000);
     log('use sidetalk');
     wire.use(utSidetalk());
     //wire.peerExtendedMapping[EXTENSION_NAME] = wire._nextExt - 1;
-    const handle = wire[EXTENSION_NAME];
-
     //wire.extended(0, {m: {[EXTENSION_NAME]: EXTENSION_ID}});
-    await new Promise(resolv=>handle.on('handshake', (shake:{m: number})=> {
-      //extension registered after handshake
-      if (shake.m[EXTENSION_NAME]) resolv(shake);
-    }));
-
-    return handle;
+    return wire[EXTENSION_NAME];
   }
 
   //--------------------------------------------------
   // provide for handy events
-  onExtendedHandshake(peerExtendedHandshake:object) {
-    this.emit('handshake', peerExtendedHandshake);
+  onExtendedHandshake(peerExtendedHandshake:{m: number}) {
+    if (peerExtendedHandshake.m[EXTENSION_NAME]) {
+      if (this.#handshaked_resolv) {
+        this.#handshaked_resolv();
+        this.#handshaked_resolv = undefined;
+      }
+      this.emit('handshake', peerExtendedHandshake);
+    }
   }
 
   onMessage(buf: Buffer) {

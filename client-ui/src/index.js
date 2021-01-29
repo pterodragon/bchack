@@ -7,6 +7,9 @@ import WebTorrent, {Torrent} from 'webtorrent-hybrid';
 
 //import {PortisWallet} from "../lib/portis";
 import {MetamaskWallet} from "payment-statechannel";
+const debug = require('debug');
+debug.enable();
+debug.log = console.info.bind(console);
 
 
 //const wallet = new PortisWallet(process.env.DAPP_ADDRESS, process.env.DAPP_NETWORK);
