@@ -18,7 +18,7 @@ const columns  = [
 
 ];
 
-export default class ProgressDataGrid extends React.Component {
+export default class WebtorrentGrid extends React.Component {
   render() {
     return ( <DataGrid rows={rows} columns={columns} hideFooter />);
   }
