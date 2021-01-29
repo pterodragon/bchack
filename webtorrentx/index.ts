@@ -1,2 +1,2 @@
-export {WireController} from './lib/control';
-export {SidetalkExtension} from './lib/sidetalk';
+export {WireControl} from './lib/control';
+export {WireSidetalk} from './lib/sidetalk';

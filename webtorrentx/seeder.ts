@@ -1,8 +1,7 @@
-import WebTorrent, {Torrent, Options as WebTorrentOptions} from 'webtorrent';
-import debug from 'debug';
+import WebTorrent, {Torrent, Options as WebTorrentOptions} from 'webtorrent'; import debug from 'debug';
 import {Wire} from 'bittorrent-protocol';
-import {SidetalkExtension} from './lib/sidetalk';
-import {WireController} from './lib/control';
+import {WireSidetalk} from './lib/sidetalk';
+import {WireControl} from './lib/control';
 
 const log = debug('wx.seeder');
 
@@ -27,12 +26,12 @@ async function main() {
     log('wire', wire.peerId);
     wire.setKeepAlive(true);
 
-    const sidetalk = await SidetalkExtension.extend(wire);
+    const sidetalk = await WireSidetalk.extend(wire);
     sidetalk.on('handshake', (handshake)=> {
       log('handshake', handshake);
     })
 
-    const control = new WireController(wire);
+    const control = WireControl.extend(wire);
     sidetalk.on('message', (msg:any)=> {
       log('message', msg, torrent.done);
       if (msg.next) {

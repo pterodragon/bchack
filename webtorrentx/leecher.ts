@@ -1,7 +1,7 @@
 import WebTorrent, {Options as WebTorrentOptions, Torrent} from 'webtorrent';
 import {Wire} from 'bittorrent-protocol';
 import debug from 'debug';
-import {SidetalkExtension} from './lib/sidetalk';
+import {WireSidetalk} from './lib/sidetalk';
 
 const log = debug('wx.leecher');
 
@@ -21,7 +21,7 @@ async function main() {
     log('wire', wire.peerId);
     wire.setKeepAlive(true);
 
-    const sidetalk = await SidetalkExtension.extend(wire);
+    const sidetalk = await WireSidetalk.extend(wire);
     sidetalk.on('handshake', (handshake)=> {
       log('handshake', handshake);
     })

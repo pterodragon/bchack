@@ -8,17 +8,17 @@ const EXTENSION_ID = 3;
 
 const utSidetalk = ()=> {
   //Extension class requires a "name" property on the prototype
-  SidetalkExtension.prototype.name = EXTENSION_NAME;
-  return SidetalkExtension;
+  WireSidetalk.prototype.name = EXTENSION_NAME;
+  return WireSidetalk;
 }
 export default utSidetalk;
 
-export interface SidetalkExtension {
+export interface WireSidetalk {
   on(event: 'handshake', listener: (peerExtendedHandshake:object)=>any): this;
   on(event: 'message', listener: (msg: object)=>any): this;
 }
 
-export class SidetalkExtension extends EventEmitter implements Extension {
+export class WireSidetalk extends EventEmitter implements Extension {
   name: string = EXTENSION_NAME
 
   constructor(protected readonly wire: Wire) {
@@ -35,7 +35,7 @@ export class SidetalkExtension extends EventEmitter implements Extension {
    * can use wire.sidetalk after calling extend() on it
    */
   //TODO: make this async return after extended handshake?
-  static async extend(wire: Wire): Promise<SidetalkExtension> {
+  static async extend(wire: Wire): Promise<WireSidetalk> {
     //log('torrent bitfield', [torrent.bitfield]);
     wire.setTimeout(24 * 60 * 60);
     log('use sidetalk');

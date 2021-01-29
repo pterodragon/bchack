@@ -9,10 +9,17 @@ declare type PIECE_ARGS = [index: number, offset: number, buffer: Buffer];
  * take the control of piece for wire
  * if not calling next(), the wire would not process to next piece
  */
-export class WireController {
+export class WireControl {
   #queue: PIECE_ARGS[] = [];
   #piece: (...args: PIECE_ARGS)=>void; 
-  constructor(private readonly wire: Wire) {
+
+  static extend(wire:Wire) {
+    const control = new WireControl(wire);
+    wire.control = control;
+    return control;
+  }
+  
+  private constructor(private readonly wire: Wire) {
     this.#piece = wire.piece;
     wire.piece = (...args) => {
       log('piece', args&&args[0]);

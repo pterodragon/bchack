@@ -1,15 +1,15 @@
-import WebTorrent, {Torrent} from 'webtorrent';
+import WebTorrent from 'webtorrent-hybrid';
 import {Wire} from "bittorrent-protocol";
 import {ethers, BigNumber, utils} from 'ethers';
-import debug from 'debug';
-import {SidetalkExtension, WireController}  from 'webtorrentx';
+import createDebug from 'debug';
+import {WireSidetalk, WireControl}  from 'webtorrentx';
 
 import dotenv from 'dotenv';
 dotenv.config();
 
 import {StateChannelsPayment, LocalWallet} from 'payment-statechannel';
 
-const log = debug('wxp.seeder');
+const log = createDebug('wxp.seeder');
 const PIECE_PRICE = utils.parseUnits("10000", "gwei");
 main();
 
@@ -21,82 +21,58 @@ async function main() {
   );
 
   const wallet = new LocalWallet(provider, process.env.WALLET1_PRIVATE_KEY);
-  const client = new WebTorrent({
-    //@ts-expect-error
-    dhtPort: '40000',
-    dht: {
-      timeBucketOutdated: 60000, maxAge: 60000,
-      host: 'seeder:40000',
-    }
-  });
-
+  const server = new WebTorrent({peerId: '2d5757303031322d724a32683939617936376c5c'});
   const opts = {announce: []}  // disable default public trackers
-  const torrent = client.seed(process.env.DATA_FILE||'data_file', opts);
+  const torrent = server.seed(process.env.DATA_FILE||'data_file', opts);
   torrent.on('ready', () => log('ready', torrent.magnetURI));
   torrent.on('download', (bytes: number) => log('download', bytes));
   torrent.on('upload', (bytes: number) => log('upload', bytes));
 
-  //temp map betweeh handshaekId(peerId) and wire
-  const handshakeWires = new Map<string, Wire>();
-  //map between wallet address and wire
-  const paymentWires = new Map<string, Wire>();
-  //map between wire and wallet address
-  const sendToWire = (address: string, payload: object) => {
-    const wire = paymentWires.get(address);
-    if (!wire) throw new Error(`wire of address ${address} not found`);
-    wire.ut_sidetalk.send({payload});
-  };
 
   const payment = new StateChannelsPayment(wallet);
-  payment.on('handshake', async(from: string, peerId: string) => {
-    log(`seeder received handeshake from ${from} of id:${peerId}`);
-    const wire = handshakeWires.get(peerId);
-    if (!wire) throw new Error(`wire of peerId ${peerId} not found`);
+  payment.on('handshake', async(from: string, handshakeId: string, wire: Wire) => {
+    log(`seeder received handeshake from ${from} of id:${handshakeId}`);
+    if (!wire) return log(`wire of handshakeId ${handshakeId} not found`);
 
-    paymentWires.set(from, wire);
     wire.address = from;
-    handshakeWires.delete(peerId);
-
-    const payload = await payment.handshake(peerId, from); 
-    sendToWire(peerId, payload);
+    const payload = await payment.handshake(handshakeId, from); 
+    wire.ut_sidetalk.send({payload});
   });
   payment.on('deposited', (from: string, amount: BigNumber)=> {
     log(`${from} deposited ${amount}`);
   });
-  payment.on('received', (from: string, amount: BigNumber)=> {
+  payment.on('received', (from: string, amount: BigNumber, wire:Wire)=> {
     log(`recieved ${amount} from ${from}`);
-    const control = paymentWires.get(from)?.control;
-    if (!control) throw new Error(`control of address ${from} not found`);
+    const control = wire.control;
+    if (!control) return log(`control of address ${from} not found`);
     control.next();
   });
-  payment.on('finalized', (from, conclusion) => {
+  payment.on('finalized', (from, conclusion, wire: Wire) => {
     log(`the channel with ${from} is finalized`, conclusion);
-    const control = paymentWires.get(from)?.control;
-    if (!control) throw new Error(`control of address ${from} not found`);
-    control.release();
-    paymentWires.delete(from);
+    wire.control.release();
   });
 
   torrent.on('wire', async(wire:Wire)=> {
-    log('wire', wire.peerId);
-    wire.control = new WireController(wire);
+    log('wire', wire.nodeId, wire.peerId);
+    if (wire.peerId !== '2d5757303031322d724a32683939617936376c5b') return;
     wire.setKeepAlive(true);
-    handshakeWires.set(wire.peerId, wire);
 
-    const sidetalk = await SidetalkExtension.extend(wire);
+    const control = WireControl.extend(wire);
+    const sidetalk = await WireSidetalk.extend(wire);
+
     sidetalk.on('handshake', async(handshake)=> {
       log('handshake', handshake);
     })
     sidetalk.on('message', (msg: {payload?: any})=> {
       if (msg.payload) {
-        payment.received(msg.payload);
+        payment.received(msg.payload, wire);
       }
     });
 
     wire.on('piece', async (index, offset, length)=> {
       log(`piece ${index} ${offset} ${length}`);
       const {address} = wire;
-      if (!address) throw new Error(`address of wire ${wire.peerId} not found`);
+      if (!address) return log(`address of wire ${wire.peerId} not found`);
 
       const payload = await payment.request(address, PIECE_PRICE);
       sidetalk.send({payload});
