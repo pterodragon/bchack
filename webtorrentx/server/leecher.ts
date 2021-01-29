@@ -1,7 +1,7 @@
 import WebTorrent, {Options as WebTorrentOptions, Torrent} from 'webtorrent';
 import {Wire} from 'bittorrent-protocol';
 import debug from 'debug';
-import {WireSidetalk} from './lib/sidetalk';
+import {WireSidetalk} from '../lib/sidetalk';
 
 const log = debug('wx.leecher');
 

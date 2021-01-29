@@ -11,7 +11,9 @@ dotenv.config();
 import {StateChannelsPayment, LocalWallet} from 'payment-statechannel';
 
 const log = createDebug('wxp.seeder');
+
 const PIECE_PRICE = utils.parseUnits("10", "wei");
+const NUM_ALLOWANCE = 10;
 main();
 
 
@@ -46,20 +48,24 @@ async function main() {
   payment.once('received', (from: string, amount: BigNumber, requestId: string, wire:Wire)=> {
     const index = parseInt(requestId);
     log(`recieved ${amount} from ${from} for index ${index}`);
-    wire.control.next();
+    const topped = Math.ceil(amount.div(PIECE_PRICE).toNumber());
+    log(`add ${topped} allowance`);
+    wire._allowance += topped;
+    wire._topup.resolve(amount);
   });
   payment.on('finalized', (from, conclusion, wire: Wire) => {
     log(`the channel with ${from} is finalized`, conclusion);
-    //wire.control.release();
+    wire.control.release();
   });
 
   torrent.on('wire', async(wire:Wire)=> {
     log('on_wire', wire.nodeId, wire.peerId);
     if (wire.peerId !== '2d5757303031322d724a32683939617936376c5b') return;
     wire.setKeepAlive(true);
-    //note: add _address and _deposited property to wire for sake of payment
+    //note: add properties to wire for sake of payment
     wire._address = deffered();
     wire._deposited = deffered();
+    wire._allowance = 0;
     //node: add wire.sidetalk and wire.control functionality
     const control = WireControl.extend(wire);
     const sidetalk = WireSidetalk.extend(wire);
@@ -75,10 +81,16 @@ async function main() {
     control.on('piece', async (index, offset, length)=> {
       log(`on_piece ${index} ${offset} ${length}`);
 
-      const address = await wire._address.promise;
-      await wire._deposited.promise;
-      const payload = await payment.request(address, PIECE_PRICE, index.toString());
-      await sidetalk.send({payload});
+      if (wire._allowance <=0) {
+        const address = await wire._address.promise;
+        await wire._deposited.promise;
+        const payload = await payment.request(address, PIECE_PRICE.mul(NUM_ALLOWANCE), index.toString());
+        await sidetalk.send({payload});
+        wire._topup = deffered();
+        await wire._topup.promise;
+      }
+      wire._allowance -= 1;
+      control.next();
     });
 
   });

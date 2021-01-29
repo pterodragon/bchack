@@ -1,7 +1,7 @@
 import WebTorrent, {Torrent, Options as WebTorrentOptions} from 'webtorrent'; import debug from 'debug';
 import {Wire} from 'bittorrent-protocol';
-import {WireSidetalk} from './lib/sidetalk';
-import {WireControl} from './lib/control';
+import {WireSidetalk} from '../lib/sidetalk';
+import {WireControl} from '../lib/control';
 
 const log = debug('wx.seeder');
 

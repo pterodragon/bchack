@@ -29,8 +29,8 @@ export class WireControl extends EventEmitter {
     this.#piece = wire.piece;
     wire.piece = (...args) => {
       log('piece', args&&args[0]);
-      this.emit('piece', ...args);
       this.#queue.push(args);
+      this.emit('piece', ...args);
     };
   }
 
@@ -42,7 +42,7 @@ export class WireControl extends EventEmitter {
 
   next() {
     const args = this.#queue.shift();
-    log('next piece', args);
+    log('next piece', args&&args[0]);
     if (!args) return false;
     this.#piece.call(this.wire, ...args);
     return true;
