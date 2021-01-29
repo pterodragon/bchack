@@ -8,7 +8,7 @@ import {StateChannelsPayment, PaymentInterface, Wallet} from './payment-statecha
 
 const log = createDebug('wxp.leecher');
 
-const PIECE_PRICE = utils.parseUnits("1", "wei");
+const PIECE_PRICE = utils.parseUnits("10", "wei");
 
 export class Leecher {
   payment: PaymentInterface<any>;

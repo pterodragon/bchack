@@ -5,16 +5,17 @@
   "license": "ISC",
   "scripts": {
     "build": "tsc",
-    "start-seeder": "rm -rf /tmp/webtorrent; DEBUG=wx.* nodemon seeder.ts",
-    "start-dummy": "rm -rf /tmp/webtorrent; DEBUG=wx.* nodemon dummy.ts",
-    "start-leecher": "DEBUG=wx.* nodemon leecher.ts",
+    "start-seeder": "rm -rf /tmp/webtorrent; DEBUG=wx.* nodemon server/seeder.ts",
+    "start-dummy": "rm -rf /tmp/webtorrent; DEBUG=wx.* nodemon server/dummy.ts",
+    "start-leecher": "DEBUG=wx.* nodemon server/leecher.ts",
     "debug-seeder": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register seeder.ts'",
     "debug-leecher": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register leecher.ts'"
   },
   "dependencies": {
     "bittorrent-dht": "^10.0.0",
     "bittorrent-protocol": "^3.2.0",
-    "debug": "^4.3.1"
+    "debug": "^4.3.1",
+    "deffered": "^0.0.4"
   },
   "devDependencies": {
     "@types/bittorrent-protocol": "^3.1.1",

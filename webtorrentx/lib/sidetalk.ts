@@ -1,5 +1,6 @@
 import {Extension, Wire} from "bittorrent-protocol";
 import {EventEmitter} from 'events'
+import deffered from 'deffered';
 import debug from 'debug';
 
 const log = debug('wx.sidetalk');
@@ -20,16 +21,15 @@ export interface WireSidetalk {
 
 export class WireSidetalk extends EventEmitter implements Extension {
   name: string = EXTENSION_NAME
-  #handshaked: Promise<any>;
-  #handshaked_resolv: any;
+  #handshaked: typeof deffered;
 
   constructor(protected readonly wire: Wire) {
     super();
-    this.#handshaked = new Promise(resolv=>this.#handshaked_resolv = resolv);
+    this.#handshaked = deffered();
   }
 
   async send(obj: object) { 
-    await this.#handshaked;
+    await this.#handshaked.promise;
     log('send', obj);
     const buf = encode(obj);
     this.wire.extended(this.name, buf);
@@ -53,10 +53,7 @@ export class WireSidetalk extends EventEmitter implements Extension {
   // provide for handy events
   onExtendedHandshake(peerExtendedHandshake:{m: number}) {
     if (peerExtendedHandshake.m[EXTENSION_NAME]) {
-      if (this.#handshaked_resolv) {
-        this.#handshaked_resolv();
-        this.#handshaked_resolv = undefined;
-      }
+      this.#handshaked.resolve();
       this.emit('handshake', peerExtendedHandshake);
     }
   }

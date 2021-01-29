@@ -89,22 +89,22 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
         statechannel.update(from, signed);
 
         //assert(myaddress === destination, `address not match: ${myaddress} !== ${allocationAddress}`);
-        const response = async() => ({
+        const respond = async() => ({
           from: myaddress,
           type: 'transfer',
           signed: {
             state: signed.state,
             signature: await sign(this._wallet.getSigner(), signed.state),
           },
-          event: {amount: event.amount}
+          event: event.requestId ?  {amount: event.amount, requestId: event.requestId} : {amount: event.amount}
         });
-        return this.emit("requested", from, BigNumber.from(event.amount), response, meta);
+        return this.emit("requested", from, BigNumber.from(event.amount), respond, meta);
       }
 
       case 'transfer': {
         const statechannel = this.getChannel(from);
         statechannel.update(from, signed);
-        return this.emit("received", from, BigNumber.from(event.amount), meta);
+        return this.emit("received", from, BigNumber.from(event.amount), event.requestId, meta);
       }
 
       case 'finalize': {
@@ -123,14 +123,15 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
   }
 
 
-  async request(fromAddress: string, amount: BigNumber): Promise<Payload> {
+  async request(fromAddress: string, amount: BigNumber, requestId?: string): Promise<Payload> {
     const statechannel = this.getChannel(fromAddress);
     const myAddress = await this.address;
+    const event = requestId ? {amount: amount.toHexString(), requestId} : {amount: amount.toHexString()};
     return {
       from: myAddress,
       type: 'request',
       signed: await statechannel.request(fromAddress, myAddress, amount),
-      event: {amount: amount.toHexString()}
+      event 
     }
   }
 

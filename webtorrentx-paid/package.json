@@ -5,13 +5,13 @@
   "license": "ISC",
   "scripts": {
     "build": "tsc",
-    "start-seeder": "DEBUG=wx*.* nodemon lib/seeder.ts",
-    "start-dummy": "DEBUG=wx*.* nodemon lib/dummy.ts",
+    "start-seeder": "DEBUG=wx*.* nodemon server/seeder.ts",
     "debug-seeder": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register lib/seeder.ts'"
   },
   "dependencies": {
     "bittorrent-protocol": "^3.2.0",
     "debug": "^4.3.1",
+    "deffered": "^0.0.4",
     "dotenv": "^8.2.0",
     "ethers": "^5.0.26",
     "payment-statechannel": "file:../payment/",

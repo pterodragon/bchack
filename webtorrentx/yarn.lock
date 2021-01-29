@@ -694,6 +694,11 @@ defer-to-connect@^1.0.1:
   resolved "https://registry.yarnpkg.com/defer-to-connect/-/defer-to-connect-1.1.3.tgz#331ae050c08dcf789f8c83a7b81f0ed94f4ac591"
   integrity sha512-0ISdNousHvZT2EiFlZeZAHBUvSxmKswVCEf8hW7KWgG4a8MVEu/3Vb6uWYozkjylyCxe0JBIiRB1jV45S70WVQ==
 
+deffered@^0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/deffered/-/deffered-0.0.4.tgz#584f237188194779aaa2b54bdc6d072156779056"
+  integrity sha1-WE8jcYgZR3mqorVL3G0HIVZ3kFY=
+
 delegates@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/delegates/-/delegates-1.0.0.tgz#84c6e159b81904fdca59a0ef44cd870d31250f9a"

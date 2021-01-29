@@ -117,7 +117,7 @@ export class StateChannel {
 
   async request(from: string, to: string, value: BigNumber): Promise<SignedState> {
     log('request', {from, to, value});
-let state = nitro.sub(this.latestState, from, value);
+    let state = nitro.sub(this.latestState, from, value);
     state = nitro.add(state, to, value);
     state.turnNum += 1;
 
