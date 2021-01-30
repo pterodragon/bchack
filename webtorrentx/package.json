@@ -5,9 +5,9 @@
   "license": "ISC",
   "scripts": {
     "build": "tsc",
-    "start-seeder": "rm -rf /tmp/webtorrent; DEBUG=wx.* nodemon server/seeder.ts",
-    "start-dummy": "rm -rf /tmp/webtorrent; DEBUG=wx.* nodemon server/dummy.ts",
-    "start-leecher": "DEBUG=wx.* nodemon server/leecher.ts",
+    "start-seeder": "rm -rf /tmp/webtorrent; DEBUG=wx.* nodemon app/seeder.ts",
+    "start-dummy": "rm -rf /tmp/webtorrent; DEBUG=wx.* nodemon app/dummy.ts",
+    "start-leecher": "DEBUG=wx.* nodemon app/leecher.ts",
     "debug-seeder": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register seeder.ts'",
     "debug-leecher": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register leecher.ts'"
   },

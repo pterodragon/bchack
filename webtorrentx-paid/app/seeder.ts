@@ -1,8 +1,9 @@
 import WebTorrent from 'webtorrent-hybrid';
+import {Torrent} from 'webtorrent';
 import {Wire} from "bittorrent-protocol";
 import {ethers, BigNumber, utils} from 'ethers';
 import createDebug from 'debug';
-import {WireSidetalk, WireControl}  from 'webtorrentx';
+import {WireSidetalk, WireShaping}  from 'webtorrentx';
 import deffered from 'deffered';
 
 import dotenv from 'dotenv';
@@ -12,8 +13,8 @@ import {StateChannelsPayment, LocalWallet} from 'payment-statechannel';
 
 const log = createDebug('wxp.seeder');
 
-const PIECE_PRICE = utils.parseUnits("10", "wei");
-const NUM_ALLOWANCE = 10;
+const PIECE_PRICE = BigNumber.from(process.env.PIECE_PRICE);
+const NUM_ALLOWANCE = process.env.NUM_ALLOWANCE;
 main();
 
 
@@ -26,7 +27,7 @@ async function main() {
   const wallet = new LocalWallet(provider, process.env.WALLET1_PRIVATE_KEY);
   const server = new WebTorrent({peerId: '2d5757303031322d724a32683939617936376c5c'});
   const opts = {announce: []}  // disable default public trackers
-  const torrent = server.seed(process.env.DATA_FILE||'data_file', opts);
+  const torrent: Torrent = server.seed(process.env.DATA_FILE||'data_file', opts);
   torrent.on('ready', () => log('ready', torrent.magnetURI));
   torrent.on('download', (bytes: number) => log('download', bytes));
   torrent.on('upload', (bytes: number) => log('upload', bytes));
@@ -48,14 +49,14 @@ async function main() {
   payment.once('received', (from: string, amount: BigNumber, requestId: string, wire:Wire)=> {
     const index = parseInt(requestId);
     log(`recieved ${amount} from ${from} for index ${index}`);
+
     const topped = Math.ceil(amount.div(PIECE_PRICE).toNumber());
     log(`add ${topped} allowance`);
-    wire._allowance += topped;
-    wire._topup.resolve(amount);
+    wire.shaping.allow(topped);
   });
   payment.on('finalized', (from, conclusion, wire: Wire) => {
     log(`the channel with ${from} is finalized`, conclusion);
-    wire.control.release();
+    wire.shaping.release();
   });
 
   torrent.on('wire', async(wire:Wire)=> {
@@ -65,9 +66,8 @@ async function main() {
     //note: add properties to wire for sake of payment
     wire._address = deffered();
     wire._deposited = deffered();
-    wire._allowance = 0;
-    //node: add wire.sidetalk and wire.control functionality
-    const control = WireControl.extend(wire);
+
+    //node: etend wire functionality
     const sidetalk = WireSidetalk.extend(wire);
     sidetalk.on('handshake', async(handshake)=> {
       log('on_handshake', handshake);
@@ -78,21 +78,17 @@ async function main() {
       }
     });
 
-    control.on('piece', async (index, offset, length)=> {
-      log(`on_piece ${index} ${offset} ${length}`);
-
-      if (wire._allowance <=0) {
-        const address = await wire._address.promise;
-        await wire._deposited.promise;
-        const payload = await payment.request(address, PIECE_PRICE.mul(NUM_ALLOWANCE), index.toString());
-        await sidetalk.send({payload});
-        wire._topup = deffered();
-        await wire._topup.promise;
-      }
-      wire._allowance -= 1;
-      control.next();
+    const shaping = WireShaping.extend(wire);
+    shaping.on('no-allowance', async()=> {
+      log(`${wire.peerId} no allowance`);
+      const address = await wire._address.promise;
+      //request only after deposited
+      await wire._deposited.promise;
+      const payload = await payment.request(address, PIECE_PRICE.mul(NUM_ALLOWANCE));
+      await sidetalk.send({payload});
     });
 
   });
 
 }
+
