@@ -21,9 +21,8 @@ export class Leecher {
     const payment = this.payment = new StateChannelsPayment(wallet);
 
     payment.on("handshakeBack", async(from: string, handshakeId: string, channelId: string, wire: Wire) => {
-      const depositAmount = PIECE_PRICE.mul(wire._length||1048576 + NUM_ALLOWANCE);
+      const depositAmount = PIECE_PRICE.mul(wire._parent.length||1048576 + NUM_ALLOWANCE);
       const payload = await payment.deposit(from, depositAmount);
-      delete wire._length;
       await wire.ut_sidetalk.send({payload});
     });
     payment.on("requested", async(from, amount, agree, wire)=> {
@@ -47,8 +46,7 @@ export class Leecher {
       log('wire', wire.nodeId, wire.peerId);
       if (wire.peerId !== '2d5757303031322d724a32683939617936376c5c') return;
       wire.setKeepAlive(true);
-      wire._length = torrent.length;
-      log('wire._length', wire._length);
+      wire._parent = torrent;
 
       const undestroy = WireUndestroyable.extend(wire);
 
