@@ -46,7 +46,7 @@ async function main() {
     log(`${from} deposited ${amount}`);
     wire._deposited.resolve();
   });
-  payment.once('received', (from: string, amount: BigNumber, requestId: string, wire:Wire)=> {
+  payment.on('received', (from: string, amount: BigNumber, requestId: string, wire:Wire)=> {
     const index = parseInt(requestId);
     log(`recieved ${amount} from ${from} for index ${index}`);
 
