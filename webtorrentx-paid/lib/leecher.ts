@@ -1,103 +1,79 @@
+import {EventEmitter} from 'events';
 import {Instance as IWebTorrent, Torrent} from 'webtorrent';
 import {Wire} from "bittorrent-protocol";
 import {ethers, BigNumber, utils} from 'ethers';
-import createDebug from 'debug';
-import {WireSidetalk}  from 'webtorrentx';
+import {WireSidetalk, WireUndestroyable}  from 'webtorrentx';
 //assume client side handle the dotenv import
-import {StateChannelsPayment, PaymentInterface, Wallet} from 'payment-statechannel';
+import {PaymentInterface, Wallet} from 'payment-statechannel';
 
-const debug = createDebug('wxp.leecher');
-const log = (...args)=> {
-  //@ts-ignore
-  debug(...args);
-  console.log(...args);
-}
-const PIECE_PRICE = utils.parseUnits("10000", "gwei");
+import createDebug from 'debug';
+const log = createDebug('wxp.leecher');
 
-export class Leecher {
-  payment: PaymentInterface<any>;
+export interface Leecher {
+  on(event:'sidetalk', listener: (peerId: string, paylaod:any)=>void): this;
+};
 
-  //temp map betweeh handshaekId(peerId) and wire
-  handshakeWires = new Map<string, Wire>();
+export class Leecher extends EventEmitter {
+  constructor(readonly client: IWebTorrent, readonly payment:PaymentInterface<any>) {
+    super();
 
-  constructor(readonly client: IWebTorrent, readonly wallet: Wallet) {
-    const payment = this.payment = new StateChannelsPayment(wallet);
-    const {handshakeWires} = this;
-
-    //map between wallet address and wire
-    const paymentWires = new Map<string, Wire>();
-    //map between wire and wallet address
-    const sendToWire = (address: string, payload: object) => {
-      const wire = paymentWires.get(address);
-      if (!wire) return log(`wire of address ${address} not found`);
-      wire.ut_sidetalk.send({payload});
-    };
-
-    payment.on("handshakeBack", async(from: string, handshakeId: string, channelId: string) => {
-      const wire = handshakeWires.get(handshakeId);
-      if (!wire) return log(`wire of handshakeId=${handshakeId} not found`);
-      paymentWires.set(from, wire);
-      handshakeWires.delete(handshakeId);
-      
-      const length = wire.length || 100;
-      delete wire.length;
-      const payload = await payment.deposit(from, PIECE_PRICE.mul(length));
-      sendToWire(from, payload);
+    payment.on("handshakeBack", async(from: string, handshakeId: string, channelId: string, depositAmount: BigNumber, wire: Wire) => {
+      const payload = await payment.deposit(from, depositAmount);
+      wire._address = from;
+      await wire.ut_sidetalk.send({payload});
     });
-    payment.on("requested", async(from, amount, agree)=> {
+    payment.on("requested", async(from, amount, agree, wire)=> {
       log(`leecher received a request of ${amount} from ${from}`);
 
       //leecher agrees on the amount and response
       const payload =  await agree();
-      sendToWire(from, payload);
+      await wire.ut_sidetalk.send({payload});
     });
   }
 
   add(uri: string): Torrent {
-    const {payment, handshakeWires} = this;
+    const {payment} = this;
 
     const torrent = this.client.add(uri);
+
     torrent.on('download', (bytes: number) => log('download', bytes));
     torrent.on('upload', (bytes: number) => log('upload', bytes));
 
     torrent.on('wire', async(wire:Wire)=> {
       log('wire', wire.nodeId, wire.peerId);
-      if (wire.nodeId !== '37a5409fee9c') return;
-      handshakeWires.set(wire.peerId, wire);
+      if (!wire.peerId.startsWith(process.env.PEER_ID_PREFIX)) return;
       wire.setKeepAlive(true);
-      wire.length = torrent.length;
+      wire._parent = torrent;
 
-      const sidetalk = await WireSidetalk.extend(wire);
+      //const undestroy = WireUndestroyable.extend(wire);
+
+      const sidetalk = WireSidetalk.extend(wire);
       sidetalk.on('handshake', async(handshake)=> {
-        log('handshake', handshake);
+        log(`wire handshake with id=${wire.peerId}`);
+        const payload = await payment.handshake(wire.peerId);
+        await sidetalk.send({payload});
       })
       sidetalk.on('message', (msg: {payload?: any})=> {
         if (msg.payload) {
-          payment.received(msg.payload);
+          payment.received(msg.payload, wire);
+          this.emit('sidetalk', wire.peerId, msg.payload);
         }
       });
-      log(`handshake with id=${wire.peerId}`);
-      const payload = await payment.handshake(wire.peerId);
-      sidetalk.send({payload});
 
-      wire.on('piece', async (index, offset, length)=> {
-        log(`piece ${index} ${offset} ${length}`);
-        const {address} = wire;
-        if (!address) return (`address of wire ${wire.peerId} not found`);
-
-        const payload = await payment.request(address, PIECE_PRICE);
-        sidetalk.send({payload});
-      });
-
-      wire.on('uninterested', async() => {
-        const payload = await payment.finalize(wire.address);
-        sidetalk.send({payload});
-        delete wire.address;
-      });
+      const uninterested = wire.uninterested;
+      wire.uninterested = async() => {
+        log(`wire ${wire.peerId} uninterested`);
+        const payload = await payment.finalize(wire._address);
+        await sidetalk.send({payload});
+        delete wire._address;
+        wire.uninterested = uninterested.bind(wire);
+        //undestroy.release();
+        wire.uninterested();
+      };
 
     });
 
-    return torrent;
+    return torrent; 
   }
 
 }

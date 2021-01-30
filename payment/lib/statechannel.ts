@@ -1,5 +1,5 @@
-import { Signature, BigNumber } from "ethers";
-import { ethers, Signer } from "ethers"
+import { Signature, BigNumber, ethers, Signer } from "ethers";
+import {EventEmitter} from 'events';
 import { Wallet } from "./wallet/wallet";
 import {createChannel,createState} from './utils';
 import { sign } from './utils';
@@ -11,8 +11,11 @@ import {
 import createDebug from 'debug';
 const log = createDebug('py.statechannel');
 
+export interface StateChannel {
+  on(event: 'signed', listener: (signed: SignedState)=>void): this;
+}
 
-export class StateChannel {
+export class StateChannel extends EventEmitter {
   private readonly nitroAdjudicator: ethers.Contract;
   private readonly ethAssetHolder: ethers.Contract;
   private _holdings = BigNumber.from(0);
@@ -32,8 +35,8 @@ export class StateChannel {
 
     const myaddress = await wallet.getAddress();
     const state = createState(channel, 1);
-    const signature = await sign(wallet.getSigner(), state);
-    instance.update( myaddress,  { state, signature });
+    const signed = await instance.signAndEmit(state);
+    instance.update( myaddress,  signed);
     return instance;
   }
 
@@ -61,6 +64,8 @@ export class StateChannel {
   }
 
   private constructor( private readonly wallet: Wallet) { 
+    super();
+
     this.nitroAdjudicator = new ethers.Contract(
       nitro.NITRO_ADJUDICATOR_ADDRESS,
       ContractArtifacts.NitroAdjudicatorArtifact.abi,
@@ -109,10 +114,7 @@ export class StateChannel {
     const state = nitro.add(this.latestState, await this.address, value);
     state.turnNum += 1;
 
-    const signer = this.wallet.getSigner();
-    const signature = await sign(signer, state);
-
-    const signed = { state, signature };
+    const signed = await this.signAndEmit(state);
     return this.update(await this.address, signed);
   }
 
@@ -122,10 +124,7 @@ export class StateChannel {
     state = nitro.add(state, to, value);
     state.turnNum += 1;
 
-    const signer = this.wallet.getSigner();
-    const signature = await sign(signer, state);
-
-    return { state, signature };
+    return await this.signAndEmit(state);
   }
 
   isConcludable(): boolean {
@@ -141,10 +140,7 @@ export class StateChannel {
     const { latestState: state } = this;
     state.isFinal = true;
 
-    const signer = this.wallet.getSigner();
-    const signature = await sign(signer, state);
-
-    return { state, signature };
+    return await this.signAndEmit(state);
   }
 
   async conclude() {
@@ -163,6 +159,14 @@ export class StateChannel {
     log('updateHolding');
     this._holdings = await this.ethAssetHolder.holdings(this._channelId);
     return this._holdings;
+  }
+
+  async signAndEmit(state: State): Promise<SignedState> {
+    const signer = this.wallet.getSigner();
+    const signature = await sign(signer, state);
+    const signed = {state, signature}
+    this.emit('signed', signed);
+    return signed;
   }
 }
 

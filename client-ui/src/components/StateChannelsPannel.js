@@ -5,11 +5,11 @@ import '../css/statechannels.css';
 
 
 function AllocationItem({destination, amount}) {
-  const shortname = destination.substring(2,8);
+  const shortname = '0x' + destination.substring(26,32);
   return (
       <Chip
-        avatar={<Avatar>{destination.substring(2,3).toUpperCase()}</Avatar>}
-        label={`${shortname} : ${amount}wei`}
+        avatar={<Avatar>{destination.substring(26,27).toUpperCase()}</Avatar>}
+        label={`${shortname} : ${Math.round(amount/1000000000)}gwei`}
         color="primary"
         variant="outlined"
         size="small"
@@ -21,11 +21,11 @@ function AllocationItem({destination, amount}) {
 function StateChannel({ channelId, allocationItems, amountDeposited, channelStatus }) {
   return (
     <div className="statechannel">
-      <span className="channelid">{channelId}</span>
+      <span className="channelid">{channelId.substring(0,8)}</span>
       <span>{channelStatus} </span>
-      <span>{amountDeposited} wei</span>
+      <span>{Math.round(amountDeposited/1000000000)} gwei</span>
       <span className='allocations'>
-      {allocationItems.map(({destination, amount}) =>
+      {allocationItems && allocationItems.map(({destination, amount}) =>
         (<AllocationItem key={destination} destination={destination} amount={amount} />)
       )}
       </span>

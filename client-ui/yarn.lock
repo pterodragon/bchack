@@ -3988,6 +3988,11 @@ dotenv@^5.0.0:
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-5.0.1.tgz#a5317459bd3d79ab88cff6e44057a6a3fbb1fcef"
   integrity sha512-4As8uPrjfwb7VXC+WnLCbXK7y+Ueb2B3zgNCePYfhxS1PYeaO1YTeplffTEcbfLhvFNGLAz90VvJs9yomG7bow==
 
+dotenv@^8.2.0:
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-8.2.0.tgz#97e619259ada750eea3e4ea3e26bceea5424b16a"
+  integrity sha512-8sJ78ElpbDJBHNeBzUbUVLsqKdccaa/BXF1uPTw3GrvQTBgrQrtObr2mUrE38vzYd8cEv+m/JBfDLioYcfXoaw==
+
 drbg.js@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/drbg.js/-/drbg.js-1.0.1.tgz#3e36b6c42b37043823cdbc332d58f31e2445480b"
@@ -10168,6 +10173,17 @@ webtorrent@>=0.108.6, webtorrent@>=0.111.0:
     ut_metadata "^3.5.2"
     ut_pex "^2.0.1"
     utp-native "^2.2.1"
+
+"webtorrentx-paid@file:../webtorrentx-paid":
+  version "1.0.0"
+  dependencies:
+    bittorrent-protocol "^3.2.0"
+    debug "^4.3.1"
+    deffered "^0.0.4"
+    dotenv "^8.2.0"
+    ethers "^5.0.26"
+    payment-statechannel "file:../../../../.cache/yarn/v6/npm-webtorrentx-paid-1.0.0-66c4cd8f-387d-45f6-acfa-02a0167111a8-1612033761581/node_modules/payment"
+    webtorrentx "file:../../../../.cache/yarn/v6/npm-webtorrentx-paid-1.0.0-66c4cd8f-387d-45f6-acfa-02a0167111a8-1612033761581/node_modules/webtorrentx"
 
 "webtorrentx@file:../webtorrentx":
   version "1.0.0"

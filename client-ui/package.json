@@ -29,7 +29,7 @@
     "redux": "latest",
     "redux-thunk": "latest",
     "webtorrent-hybrid": "^4.0.3",
-    "webtorrentx": "file:../webtorrentx",
+    "webtorrentx-paid": "file:../webtorrentx-paid",
     "payment-statechannel": "file:../payment"
   },
   "devDependencies": {

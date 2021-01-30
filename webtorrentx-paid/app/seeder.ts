@@ -78,7 +78,7 @@ async function main() {
 
   torrent.on('wire', async(wire:Wire)=> {
     log('on_wire', wire.nodeId, wire.peerId);
-    if (wire.peerId !== '2d5757303031322d724a32683939617936376c5b') return;
+    if (!wire.peerId.startsWith(process.env.PEER_ID_PREFIX)) return;
     wire.setKeepAlive(true);
     //note: add properties to wire for sake of payment
     wire._address = deffered();
