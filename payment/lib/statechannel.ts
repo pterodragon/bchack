@@ -50,7 +50,7 @@ export class StateChannel {
     return instance;
   }
 
-  static externalDeposit(wallet: Wallet, channelId: string, expectHeld:BigNumber, value: BigNumber): Promise<DepositedEvent> {
+  static externalDeposit(wallet: Wallet, channelId: string, expectHeld:BigNumber, value: BigNumber) {
     log('externalDeposit', {channelId, expectHeld, value});
     const ethAssetHolder = new ethers.Contract(
       nitro.ETH_ASSET_HOLDER_ADDRESS,
@@ -104,8 +104,9 @@ export class StateChannel {
 
   async deposit(value: BigNumber): Promise<SignedState> {
     log('deposit', value);
-    const { destinationHoldings } = await nitro.deposit(this.ethAssetHolder, this.channelId, this._holdings, value);
-    this._holdings = destinationHoldings;
+    const evt = await nitro.deposit(this.ethAssetHolder, this.channelId, this._holdings, value);
+    this._holdings = evt?.destinationHoldings || await this.updateHolding();
+    log('holdings after deposit', this._holdings);
     const state = nitro.add(this.latestState, await this.address, value);
 
     const signer = this.wallet.getSigner();

@@ -14,7 +14,6 @@ declare type Payload = {
   signed?: SignedState;
   event: any;
 };
-
 /**
  * only support two participants and single directional transfer for now
  */
@@ -29,7 +28,7 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
     super();
   }
   
-  static deposit(wallet: Wallet, channelId: string, expectHeld: BigNumber, value: BigNumber): Promise<DepositedEvent> {
+  static deposit(wallet: Wallet, channelId: string, expectHeld: BigNumber, value: BigNumber): Promise<DepositedEvent | undefined> {
     return StateChannel.externalDeposit(wallet, channelId, expectHeld, value);
   }
 
@@ -47,11 +46,13 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
       const signed = statechannel.getSignedState(myaddress);
 
       const { channelId } = statechannel;
+      const event = expected ? { handshakeId, channelId, expected:expected.toHexString() } : { handshakeId, channelId };
+
       return { 
         from: myaddress,
         type: 'handshake',
         signed,
-        event: {handshakeId, channelId, expected: expected.toHexString()},
+        event
       };
     }
     return { 
@@ -69,7 +70,7 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
         if (signed) { //from a handshake back
           const statechannel = StateChannel.createFromState(this._wallet, event.channelId, from, signed);
           this._channels.set(from, statechannel);
-          return this.emit("handshakeBack", from, event.handshakeId, event.channelId, BigNumber.from(event.expected), meta);
+          return this.emit("handshakeBack", from, event.handshakeId, event.channelId, event.expected && BigNumber.from(event.expected), meta);
         }
         return this.emit("handshake", from, event.handshakeId, meta);
       }

@@ -18,15 +18,21 @@ const log = createDebug('py.nitro');
 export const ETH_ASSET_HOLDER_ADDRESS = process.env.ETH_ASSET_HOLDER_ADDRESS || '';
 export const NITRO_ADJUDICATOR_ADDRESS = process.env.NITRO_ADJUDICATOR_ADDRESS || '';
 
+log({ETH_ASSET_HOLDER_ADDRESS, NITRO_ADJUDICATOR_ADDRESS});
+
 export async function deposit(ethAssetHolder: ethers.Contract, channelId: string, expectedHeld: BigNumber, value: BigNumber) {
   //const value = ethers.utils.parseUnits(amount, "wei");
   const tx = ethAssetHolder.deposit(channelId, expectedHeld, value, {value});
-
-  const { events } = await (await tx).wait();
+  const ret = await (await tx).wait();
   //const { destination, amountDeposited, destinationHoldings } = getDepositedEvent(events); 
-  const depositedEvent = getDepositedEvent(events); 
-  log({depositedEvent});
-  return depositedEvent;
+  try {
+    const depositedEvent = getDepositedEvent(ret.events); 
+    log({depositedEvent});
+    return depositedEvent;
+  } catch(err){
+    log(err);
+    return;
+  }
 }
 
 export function add(
