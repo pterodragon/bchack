@@ -16,12 +16,12 @@ function App(props) {
     <div className="App">
       <Layout>
         <Header className="header">
-          <MagnetSearch props={props}/>
+          <MagnetSearch />
         </Header>
         <Layout>
           <Sider width={300} className="site-layout-background">
             <Menu mode="inline" style={{ height: '100%', borderRight: 0 }} >
-              <Wallet props={props}/>
+              <Wallet />
             </Menu>
           </Sider>
           <Layout style={{ padding: '0 24px 24px' }}>

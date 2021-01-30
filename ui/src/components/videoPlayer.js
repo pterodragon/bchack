@@ -5,8 +5,8 @@
     2. paid / view ad
 */
 
-import { Button, Layout, Menu, Typography, Input, Space } from 'antd';
-const { Header, Content, Sider } = Layout;
+import { Layout } from 'antd';
+const { Content } = Layout;
 
 function VideoPlayer() {
     return (

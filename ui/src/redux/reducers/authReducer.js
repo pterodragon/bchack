@@ -15,8 +15,13 @@ const videoReducer = (state = initialState, action) => {
         case 'isLogged':
             return {
                 ...state,
-                name: 'User 2',
-                balance: 32
+                name: '',
+                balance: 0
+            }
+        case 'PAY_ETH':
+            return {
+                ...state,
+                balance: state.balance - 10,
             }
         default:
             return state;
