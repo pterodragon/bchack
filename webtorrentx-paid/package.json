@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start-seeder": "DEBUG=wx*.* nodemon app/seeder.ts",
-    "debug-seeder": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register lib/seeder.ts'"
+    "debug-seeder": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register app/seeder.ts'"
   },
   "dependencies": {
     "bittorrent-protocol": "^3.2.0",

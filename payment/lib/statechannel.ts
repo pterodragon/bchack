@@ -104,10 +104,10 @@ export class StateChannel {
 
   async deposit(value: BigNumber): Promise<SignedState> {
     log('deposit', value);
-    const evt = await nitro.deposit(this.ethAssetHolder, this.channelId, this._holdings, value);
-    this._holdings = evt?.destinationHoldings || await this.updateHolding();
+    this._holdings = await nitro.deposit(this.ethAssetHolder, this.channelId, this._holdings, value);
     log('holdings after deposit', this._holdings);
     const state = nitro.add(this.latestState, await this.address, value);
+    state.turnNum += 1;
 
     const signer = this.wallet.getSigner();
     const signature = await sign(signer, state);

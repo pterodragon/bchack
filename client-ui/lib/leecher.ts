@@ -1,9 +1,9 @@
 import {Instance as IWebTorrent, Torrent} from 'webtorrent';
 import {Wire} from "bittorrent-protocol";
 import {ethers, BigNumber, utils} from 'ethers';
-import {WireSidetalk, WireUndestroyable}  from './webtorrentx';
+import {WireSidetalk, WireUndestroyable}  from 'webtorrentx';
 //assume client side handle the dotenv import
-import {StateChannelsPayment, PaymentInterface, Wallet} from './payment-statechannel';
+import {StateChannelsPayment, PaymentInterface, Wallet} from 'payment-statechannel';
 
 import createDebug from 'debug';
 const log = createDebug('wxp.leecher');

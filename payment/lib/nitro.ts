@@ -28,10 +28,10 @@ export async function deposit(ethAssetHolder: ethers.Contract, channelId: string
   try {
     const depositedEvent = getDepositedEvent(ret.events); 
     log({depositedEvent});
-    return depositedEvent;
+    return depositedEvent.destinationHoldings;
   } catch(err){
     log(err);
-    return;
+    return expectedHeld.add(value);
   }
 }
 
@@ -40,13 +40,10 @@ export function add(
   address: string,
   value: BigNumber): State
 {
-  const amount = value.toHexString();
-  state = { ...state, outcome: outcomesToMap(state.outcome as AllocationAssetOutcome[])
-                  .add(ETH_ASSET_HOLDER_ADDRESS, convertAddressToBytes32(address), amount)
-                  .toOutcome()
-  };
-  
-  return state;
+  const map = outcomesToMap(state.outcome as AllocationAssetOutcome[]);
+  const added = map.add(ETH_ASSET_HOLDER_ADDRESS, convertAddressToBytes32(address), value);
+  const outcome = added.toOutcome();
+  return { ...state, outcome };
 }
 
 export function sub(
@@ -54,13 +51,10 @@ export function sub(
   address: string,
   value: BigNumber): State
 {
-  const amount = value.toHexString();
-  state = { ...state, outcome: outcomesToMap(state.outcome as AllocationAssetOutcome[])
-                  .sub(ETH_ASSET_HOLDER_ADDRESS, convertAddressToBytes32(address), amount)
-                  .toOutcome()
-  };
-
-  return state;
+  const map = outcomesToMap(state.outcome as AllocationAssetOutcome[]);
+  const subbed = map.sub(ETH_ASSET_HOLDER_ADDRESS, convertAddressToBytes32(address), value);
+  const outcome = subbed.toOutcome();
+  return { ...state, outcome };
 }
 
 

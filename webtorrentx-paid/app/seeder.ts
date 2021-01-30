@@ -1,7 +1,7 @@
 import WebTorrent from 'webtorrent-hybrid';
 import {Torrent} from 'webtorrent';
 import {Wire} from "bittorrent-protocol";
-import {ethers, BigNumber, utils} from 'ethers';
+import {ethers, providers, BigNumber, utils} from 'ethers';
 import createDebug from 'debug';
 import {WireSidetalk, WireShaping}  from 'webtorrentx';
 import deffered from 'deffered';
@@ -19,12 +19,16 @@ log({PIECE_PRICE, NUM_ALLOWANCE});
 main();
 
 async function main() {
-  /* Set up an ethereum provider connected to our local blockchain */
+  /*
+  // Set up an ethereum provider connected to our local blockchain
   const provider = new ethers.providers.JsonRpcProvider(
     `http://localhost:${process.env.GANACHE_PORT}`
   );
+  */
+  const provider = new providers.InfuraProvider(process.env.DAPP_NETWORK, process.env.INFURA_API_KEY);
 
   const wallet = new LocalWallet(provider, process.env.WALLET1_PRIVATE_KEY);
+
   const server = new WebTorrent({peerId: '2d5757303031322d724a32683939617936376c5c'});
   const opts = {announce: []}  // disable default public trackers
 

@@ -48,27 +48,25 @@ export function createState(channel: Channel, challengeDuration=10): State {
 
 
 class OutcomesMap extends Map<string, Map<string, BigNumber>> {
-  add(assetHolderAddress: string, destination: string, amount: any) {
+  add(assetHolderAddress: string, destination: string, value: BigNumber) {
     let map = super.get(assetHolderAddress);
     if (!map) {
       map = new Map();
       super.set(assetHolderAddress, map);
     }
-    const value = BigNumber.from(amount);
-    let balance = map.get(destination);
+    const balance = map.get(destination);
     map.set(destination, balance ? balance.add(value) : value);
     return this;
   }
 
-  sub(assetHolderAddress: string, destination: string, amount: any) {
+  sub(assetHolderAddress: string, destination: string, value: BigNumber) {
     let map = super.get(assetHolderAddress);
     if (!map) {
       map = new Map();
       super.set(assetHolderAddress, map);
     }
-    const value = BigNumber.from(amount);
-    let balance = map.get(destination);
-    map.set(destination, balance ? balance.sub(value) : value.mul(BigNumber.from(-1)));
+    const balance = map.get(destination);
+    map.set(destination, balance ? balance.sub(value) : value.mul(-1));
     return this;
   }
 
@@ -85,11 +83,12 @@ class OutcomesMap extends Map<string, Map<string, BigNumber>> {
 };
 
 export function outcomesToMap(outcomes: AllocationAssetOutcome[]): OutcomesMap {
-  return outcomes.reduce((ret, {assetHolderAddress,allocationItems}) => {
-    allocationItems.forEach(({destination, amount}) =>
-      ret.add(assetHolderAddress, destination, amount)
-    );
-    return ret;
-  }, new OutcomesMap() );
+  const out = new OutcomesMap();
+  for (const {assetHolderAddress,allocationItems} of outcomes) {
+    for (const {destination, amount} of allocationItems) {
+      out.add(assetHolderAddress, destination, BigNumber.from(amount));
+    }
+  }
+  return out;
 }
 

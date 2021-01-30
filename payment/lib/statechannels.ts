@@ -28,7 +28,7 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
     super();
   }
   
-  static deposit(wallet: Wallet, channelId: string, expectHeld: BigNumber, value: BigNumber): Promise<DepositedEvent | undefined> {
+  static deposit(wallet: Wallet, channelId: string, expectHeld: BigNumber, value: BigNumber): Promise<BigNumber> {
     return StateChannel.externalDeposit(wallet, channelId, expectHeld, value);
   }
 

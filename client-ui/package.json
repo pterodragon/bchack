@@ -28,7 +28,9 @@
     "react-router-dom": "latest",
     "redux": "latest",
     "redux-thunk": "latest",
-    "webtorrent-hybrid": "^4.0.3"
+    "webtorrent-hybrid": "^4.0.3",
+    "webtorrentx": "file:../webtorrentx",
+    "payment-statechannel": "file:../payment"
   },
   "devDependencies": {
     "babel-core": "latest",
