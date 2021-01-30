@@ -9,12 +9,13 @@ declare type PIECE_ARGS = [index: number, offset: number, buffer: Buffer];
 
 export interface WireShaping {
   on(event: 'no-allowance', listener: ()=>any): this;
+  on(event: 'piece', listener: (...args: PIECE_ARGS)=>any): this;
 }
 
 export class WireShaping extends EventEmitter {
   #allowance: number = 0;
   #piece: (...args: PIECE_ARGS)=>void; 
-  #toppedup?: typeof deffered;
+  #allowed?: typeof deffered;
 
   static extend(wire:Wire) {
     const shaping = new WireShaping(wire);
@@ -30,17 +31,18 @@ export class WireShaping extends EventEmitter {
     wire.piece = async(...args: PIECE_ARGS) => {
       log('on_piece', args[0], args[1], 'allowance:', this.#allowance);
       while (this.#allowance <= 0) {
-        if (!this.#toppedup) {
-          this.#toppedup = deffered();
+        if (!this.#allowed) {
           log('no-allowance');
+          this.#allowed = deffered();
           this.emit('no-allowance');
         }
-        await this.#toppedup.promise;
-        this.#toppedup = undefined;
+        await this.#allowed.promise;
+        this.#allowed = undefined;
       }
       log('piece', args[0], args[1], 'allowance:', this.#allowance);
       this.#allowance -= 1;
       this.#piece.call(wire, ...args);
+      this.emit('piece', ...args);
     };
 
   }
@@ -52,11 +54,11 @@ export class WireShaping extends EventEmitter {
 
   allow(topup: number) {
     this.#allowance += topup;
-    if (this.#toppedup) {
-      this.#toppedup.resolve();
+    if (this.#allowed) {
+      this.#allowed.resolve();
     }
     else {
-      this.#toppedup = Promise.resolve(topup);
+      this.#allowed = Promise.resolve(topup);
     }
   }
 
