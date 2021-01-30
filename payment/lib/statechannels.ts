@@ -38,9 +38,21 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
   }
 
 
-  async handshake(handshakeId: string, address?: string): Promise<Payload> {
+  async handshake(handshakeId: string, address?: string, expected?: BigNumber): Promise<Payload> {
     if (address) {
-      return this.handshakeBack(handshakeId, address);
+      //handshake back
+      const myaddress = await this.address;
+      const statechannel = await StateChannel.createFromScratch(this._wallet, this._chainId, [myaddress, address]);
+      this._channels.set(address, statechannel);
+      const signed = statechannel.getSignedState(myaddress);
+
+      const { channelId } = statechannel;
+      return { 
+        from: myaddress,
+        type: 'handshake',
+        signed,
+        event: {handshakeId, channelId, expected: expected.toHexString()},
+      };
     }
     return { 
       from: await this.address,
@@ -49,31 +61,15 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
     };
   }
 
-  private async handshakeBack(handshakeId: string, dest: string): Promise<Payload> {
-    const myaddress = await this.address;
-    const statechannel = await StateChannel.createFromScratch(this._wallet, this._chainId, [myaddress, dest]);
-    this._channels.set(dest, statechannel);
-    const signed = statechannel.getSignedState(myaddress);
-
-    //const amount = parseUnits("1000000", "gwei").toHexString();
-    //statechannel.deposit(amount);
-    const { channelId } = statechannel;
-    return { 
-      from: myaddress,
-      type: 'handshake',
-      signed,
-      event: {handshakeId, channelId},
-    };
-  }
 
   async received({from, type, signed, event} : Payload,  meta?: any) {
     const myaddress = await this.address;
     switch(type) {
       case 'handshake': {
-        if (signed) {
+        if (signed) { //from a handshake back
           const statechannel = StateChannel.createFromState(this._wallet, event.channelId, from, signed);
           this._channels.set(from, statechannel);
-          return this.emit("handshakeBack", from, event.handshakeId, event.channelId, meta);
+          return this.emit("handshakeBack", from, event.handshakeId, event.channelId, BigNumber.from(event.expected), meta);
         }
         return this.emit("handshake", from, event.handshakeId, meta);
       }

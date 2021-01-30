@@ -13,10 +13,10 @@ import {StateChannelsPayment, LocalWallet} from 'payment-statechannel';
 
 const log = createDebug('wxp.seeder');
 
-const PIECE_PRICE = BigNumber.from(process.env.PIECE_PRICE);
-const NUM_ALLOWANCE = process.env.NUM_ALLOWANCE;
+const PIECE_PRICE = utils.parseUnits(process.env.PIECE_PRICE, process.env.PIECE_PRICE_UNIT);
+const NUM_ALLOWANCE = parseInt(process.env.NUM_ALLOWANCE);
+log({PIECE_PRICE, NUM_ALLOWANCE});
 main();
-
 
 async function main() {
   /* Set up an ethereum provider connected to our local blockchain */
@@ -27,7 +27,12 @@ async function main() {
   const wallet = new LocalWallet(provider, process.env.WALLET1_PRIVATE_KEY);
   const server = new WebTorrent({peerId: '2d5757303031322d724a32683939617936376c5c'});
   const opts = {announce: []}  // disable default public trackers
+
+  const balance = await wallet.getSigner().getBalance();
+  log('before seeder balance', balance.toString());
+
   const torrent: Torrent = server.seed(process.env.DATA_FILE||'data_file', opts);
+  log('torrent.length', torrent.length);
   torrent.on('ready', () => log('ready', torrent.magnetURI));
   torrent.on('download', (bytes: number) => log('download', bytes));
   torrent.on('upload', (bytes: number) => log('upload', bytes));
@@ -39,7 +44,9 @@ async function main() {
     if (!wire) return log(`wire of handshakeId ${handshakeId} not found`);
 
     wire._address.resolve(from);
-    const payload = await payment.handshake(handshakeId, from); 
+    const numPiece = Math.ceil(torrent.length/torrent.pieceLength);
+    const expectedDeposit = PIECE_PRICE.mul(numPiece + NUM_ALLOWANCE);
+    const payload = await payment.handshake(handshakeId, from, expectedDeposit);
     await wire.ut_sidetalk.send({payload});
   });
   payment.on('deposited', (from: string, amount: BigNumber, wire: Wire)=> {
@@ -54,9 +61,15 @@ async function main() {
     log(`add ${topped} allowance`);
     wire.shaping.allow(topped);
   });
-  payment.on('finalized', (from, conclusion, wire: Wire) => {
-    log(`the channel with ${from} is finalized`, conclusion);
+  payment.on('finalized', async(from, conclusion, wire: Wire) => {
+    log(`the channel with ${from} is finalized`);
+    log(JSON.stringify(conclusion));
+    if (wire._deposited) delete wire._deposited;
     wire.shaping.release();
+    
+    const balance = await wallet.getSigner().getBalance();
+    log('after seeder balance', balance.toString());
+    //wire.sidetalk.send({finalized: true});
   });
 
   torrent.on('wire', async(wire:Wire)=> {

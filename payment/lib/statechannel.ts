@@ -31,7 +31,7 @@ export class StateChannel {
     instance._channelId = getChannelId(channel);
 
     const myaddress = await wallet.getAddress();
-    const state = createState(channel);
+    const state = createState(channel, 1);
     const signature = await sign(wallet.getSigner(), state);
     instance.update( myaddress,  { state, signature });
     return instance;
@@ -151,6 +151,7 @@ export class StateChannel {
     //if (!this.isConcludable()) throw new Error(`statechannel ${this._channelId} is not concludable`);
     
     const state = this.latestState;
+    log('latestState', JSON.stringify(state));
     const {participants} = state.channel;
     const signatures = participants.map((addr)=>this.getSignedState(addr).signature);
     const event = await nitro.conclude(this.nitroAdjudicator, this.latestState, signatures);

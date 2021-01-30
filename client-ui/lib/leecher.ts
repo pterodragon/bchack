@@ -1,5 +1,4 @@
 import {Instance as IWebTorrent, Torrent} from 'webtorrent';
-import { Instance as SimplePeer } from 'simple-peer';
 import {Wire} from "bittorrent-protocol";
 import {ethers, BigNumber, utils} from 'ethers';
 import {WireSidetalk, WireUndestroyable}  from './webtorrentx';
@@ -9,9 +8,6 @@ import {StateChannelsPayment, PaymentInterface, Wallet} from './payment-statecha
 import createDebug from 'debug';
 const log = createDebug('wxp.leecher');
 
-const PIECE_PRICE = BigNumber.from(process.env.PIECE_PRICE);
-const NUM_ALLOWANCE = parseInt(process.env.NUM_ALLOWANCE);
-
 export class Leecher {
   payment: PaymentInterface<any>;
 
@@ -20,9 +16,9 @@ export class Leecher {
   constructor(readonly client: IWebTorrent, readonly wallet: Wallet) {
     const payment = this.payment = new StateChannelsPayment(wallet);
 
-    payment.on("handshakeBack", async(from: string, handshakeId: string, channelId: string, wire: Wire) => {
-      const depositAmount = PIECE_PRICE.mul(wire._parent.length||1048576 + NUM_ALLOWANCE);
+    payment.on("handshakeBack", async(from: string, handshakeId: string, channelId: string, depositAmount: BigNumber, wire: Wire) => {
       const payload = await payment.deposit(from, depositAmount);
+      wire._address = from;
       await wire.ut_sidetalk.send({payload});
     });
     payment.on("requested", async(from, amount, agree, wire)=> {
@@ -48,7 +44,7 @@ export class Leecher {
       wire.setKeepAlive(true);
       wire._parent = torrent;
 
-      const undestroy = WireUndestroyable.extend(wire);
+      //const undestroy = WireUndestroyable.extend(wire);
 
       const sidetalk = WireSidetalk.extend(wire);
       sidetalk.on('handshake', async(handshake)=> {
@@ -62,13 +58,16 @@ export class Leecher {
         }
       });
 
-      wire.on('uninterested', async() => {
+      const uninterested = wire.uninterested;
+      wire.uninterested = async() => {
         log(`wire ${wire.peerId} uninterested`);
-        const payload = await payment.finalize(wire.address);
+        const payload = await payment.finalize(wire._address);
         await sidetalk.send({payload});
-        delete wire.address;
-        undestroy.release();
-      });
+        delete wire._address;
+        wire.uninterested = uninterested.bind(wire);
+        //undestroy.release();
+        wire.uninterested();
+      };
 
     });
 
