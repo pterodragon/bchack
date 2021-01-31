@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start-seeder": "DEBUG=wx*.* nodemon app/seeder.ts",
-    "debug-seeder": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register app/seeder.ts'"
+    "debug-seeder": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register app/seeder.ts'",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "bittorrent-protocol": "^3.2.0",
@@ -14,8 +15,8 @@
     "deffered": "^0.0.4",
     "dotenv": "^8.2.0",
     "ethers": "^5.0.26",
-    "payment-statechannel": "file:../payment/",
-    "webtorrentx": "file:../webtorrentx/"
+    "payment-statechannel": "1.0.0",
+    "webtorrentx": "1.0.0"
   },
   "devDependencies": {
     "@types/bittorrent-protocol": "^3.1.1",

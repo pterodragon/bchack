@@ -10,7 +10,8 @@
     "start-dummy": "rm -rf /tmp/webtorrent; DEBUG=wx.* nodemon app/dummy.ts",
     "start-leecher": "DEBUG=wx.* nodemon app/leecher.ts",
     "debug-seeder": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register seeder.ts'",
-    "debug-leecher": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register leecher.ts'"
+    "debug-leecher": "nodemon -e ts --exec 'node --inspect-brk --require ts-node/register leecher.ts'",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "bittorrent-dht": "^10.0.0",

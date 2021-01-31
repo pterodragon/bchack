@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
+    "clean": "rm -rf dist",
     "test": "NODE_ENV=test jest -c ./test/jest.config.js",
     "simulate": "NODE_ENV=test ts-node ./test/simulator.ts"
   },

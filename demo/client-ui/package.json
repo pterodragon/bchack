@@ -8,7 +8,8 @@
     "react-build": "parcel build index.html --out-dir build --public-url ./",
     "clean-build": "rm -rf build/ .cache dist/",
     "build": "yarn clean-build && yarn react-build",
-    "start": "yarn react-start"
+    "start": "yarn react-start",
+    "clean": "rm -rf build/ .cache dist/"
   },
   "dependencies": {
     "@material-ui/core": "^4.0.0",
@@ -29,8 +30,8 @@
     "redux": "latest",
     "redux-thunk": "latest",
     "webtorrent-hybrid": "^4.0.3",
-    "webtorrentx-paid": "file:../webtorrentx-paid",
-    "payment-statechannel": "file:../payment"
+    "webtorrentx-paid": "1.0.0",
+    "payment-statechannel": "1.0.0"
   },
   "devDependencies": {
     "babel-core": "latest",
