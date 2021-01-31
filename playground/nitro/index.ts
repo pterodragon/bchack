@@ -4,7 +4,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import Web3 from 'web3';
 
-import { ethers, providers, Signer, Wallet, Signature } from "ethers";
+import { ethers, providers, Wallet, Signature } from "ethers";
 import { Channel, State, SignedState, getChannelId, signStates,
   getFixedPart, getVariablePart, hashAppPart, hashOutcome, encodeOutcome,
   ContractArtifacts
@@ -100,11 +100,7 @@ async function conclude(nitroAdjudicator: ethers.Contract, ethAssetHolder: ether
   const numStates = 1;
   const whoSignedWhat = new Array(signatures.length).fill(0);
 
-  console.log({
-    state,
-    fixedPart, appPartHash, outcomeBytes,
-    numStates, whoSignedWhat, signatures
-  });
+  //console.log({ state, fixedPart, appPartHash, outcomeBytes, numStates, whoSignedWhat, signatures });
   const tx = nitroAdjudicator.concludePushOutcomeAndTransferAll(
     state.turnNum,
     fixedPart, appPartHash, outcomeBytes,

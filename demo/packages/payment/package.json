@@ -1,0 +1,29 @@
+{
+  "name": "payment-statechannel",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "NODE_ENV=test jest -c ./test/jest.config.js",
+    "simulate": "NODE_ENV=test ts-node ./test/simulator.ts"
+  },
+  "dependencies": {
+    "@ethersproject/experimental": "^5.0.7",
+    "@statechannels/nitro-protocol": "^0.12.0",
+    "debug": "^4.3.1",
+    "ethers": "^5.0.26",
+    "web3": "^1.3.1"
+  },
+  "devDependencies": {
+    "@statechannels/devtools": "^0.5.2",
+    "@types/debug": "^4.1.5",
+    "@types/jest": "^26.0.20",
+    "@types/node": "^14.14.17",
+    "etherlime-lib": "^1.2.3",
+    "jest": "^26.0.1",
+    "nodemon": "^2.0.7",
+    "ts-jest": "^26.0.0",
+    "ts-node": "^9.1.1"
+  }
+}

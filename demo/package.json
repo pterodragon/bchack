@@ -1,0 +1,23 @@
+{
+  "name": "bchack",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:pterodragon/bchack.git",
+  "scripts": {
+    "clean": "lerna run clean && rm -rf **/node_modules",
+    "bootstrap": "lerna bootstrap --hoist",
+    "prepare": "npm run bootstrap && lerna exec npm install",
+    "build": "lerna run build"
+  },
+  "contributors": [
+    "David Wong <davidwongtt@gmail.com>",
+    "Kitty Lo",
+    "Nelson Leung",
+    "Wing Poon"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "lerna": "^3.22.1",
+    "typescript": "^4.1.3"
+  }
+}

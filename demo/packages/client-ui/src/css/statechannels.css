@@ -1,0 +1,33 @@
+.statechannels {
+  display: table;
+  width: auto;
+  border-spacing: 15px;
+}
+
+.header * {
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+.statechannel {
+  display:table-row;
+}
+
+.statechannel span {
+  float:left;
+  display: table-column;
+  width: 200px;
+  margin: auto;
+}
+
+.statechannel .channelid {
+  font-weight: bold;
+}
+
+.statechannel .allocations {
+  width: auto;
+}
+
+.statechannel .allocations * {
+  margin-left: 10px;
+}
