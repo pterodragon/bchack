@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "lerna run clean && rm -rf **/node_modules",
     "bootstrap": "lerna bootstrap --hoist",
-    "install": "lerna exec npm install",
+    "prepare": "lerna exec npm install",
     "build": "lerna run build"
   },
   "contributors": [
