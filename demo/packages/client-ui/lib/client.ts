@@ -1,12 +1,13 @@
 import WebTorrent from 'webtorrent-hybrid';
 import {Leecher} from 'webtorrentx-paid'; 
-//import {PortisWallet} from "../lib/portis";
+import {PortisWallet} from "../lib/portis";
 import {MetamaskWallet, StateChannelsPayment} from "payment-statechannel";
 
 function createClient() {
 
-  const wallet = new MetamaskWallet();
-  //const wallet = new PortisWallet(process.env.DAPP_ADDRESS, process.env.DAPP_NETWORK);
+  const wallet = process.env.WALLET_TYPE === 'portis' ?
+    new PortisWallet(process.env.DAPP_ADDRESS, process.env.DAPP_NETWORK) :
+    new MetamaskWallet();
 
   //@ts-ignore
   (typeof global === 'undefined' ? window : global).WEBTORRENT_ANNOUNCE = null;

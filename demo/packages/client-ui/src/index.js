@@ -30,23 +30,23 @@ wallet.on('login', async(address) => {
 });
 wallet.open();
 
-
+let rendered = false;
 leecher.on('add', async(torrent)=> {
   //TODO: add actions file for this?
   await new Promise(resolv=>setTimeout(resolv, 2000));
   store.dispatch({type: 'TORRENT', torrent});
 
-  torrent.once('ready', ()=> {
-    const file = (torrent.files && torrent.files[0]);
-    if (file) {
-      console.log('render video');
-      file.renderTo('video#MainVideoPlayer');
+  torrent.on('download', (bytes)=> {
+    store.dispatch({type: 'TORRENT', torrent})
+    if (!rendered) {
+      const file = (torrent.files && torrent.files[0]);
+      if (file) {
+        console.log('render video');
+        rendered = true;
+        file.renderTo('video#MainVideoPlayer');
+      }
     }
   });
-
-  torrent.on('download', (bytes)=> 
-    store.dispatch({type: 'TORRENT', torrent})
-  );
 });
 
 

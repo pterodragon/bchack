@@ -15,7 +15,7 @@ export default function MagnetSearch(props) {
                 <Title id="title" style={{ color: 'white', width: '300px' }} level={1}>WebTorrent</Title>
             </Space>
             <Space style={{ padding: 15 }}>
-                <Search id="search" style={{ float: 'right', width: '700px' }} placeholder="Magnet Link" value={props.uri} onSearch={props.inputChanged} enterButton />
+                <Search id="search" style={{ float: 'right', width: '700px' }} placeholder="Magnet Link" onSearch={props.inputChanged} enterButton />
             </Space>
             <Modal title="Pay for the video?" visible={props.confirmmodal} onOk={props.modalInvisible} onCancel={props.modalInvisible}></Modal>
             <Modal title="Please pay or watch an ad to play the video:" visible={props.paymentmodal} onOk={props.modalInvisible} onCancel={props.modalInvisible}>
