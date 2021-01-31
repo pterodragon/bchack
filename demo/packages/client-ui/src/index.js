@@ -51,6 +51,10 @@ payment.on('stateUpdated', (address, channelId, {state})=> {
   },[]) || [];
   store.dispatch(statechannelsActions.updateAllocations(channelId, allocationItems));
 
+  const statechannel = payment.getChannel(address);
+  const holdings = parseInt(statechannel.holdings.toString());
+  store.dispatch(statechannelsActions.updateDeposited(channelId, holdings));
+
   if (state.isFinal) {
     store.dispatch(statechannelsActions.updateStatus(channelId, 'completed'));
   }
@@ -63,10 +67,6 @@ payment.on('handshakeBack', (address, handshakeId, channelId)=>{
     allocationItems: [],
   };
   store.dispatch(statechannelsActions.addChannel(channelId, channel));
-
-  const statechannel = payment.getChannel(address);
-  const holdings = parseInt(statechannel.holdings.toString());
-  store.dispatch(statechannelsActions.updateDeposited(channelId, holdings));
 });
 
 

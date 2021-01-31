@@ -2,12 +2,12 @@
 ```bash
 npm run clean
 npm install
-npm boostrap
-npm prepare
 npm run build
 ```
 
 ## Run seeder server
+prepare a sample.mp4 in the 'packages/webtorrentx-paid/data' directory.
+then:
 ```bash
 cd packages/webtorrentx-paid
 # use the appropiate .env file
