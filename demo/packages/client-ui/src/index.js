@@ -1,44 +1,54 @@
-import WebTorrent from 'webtorrent-hybrid';
-
-import {Leecher} from 'webtorrentx-paid'; 
-//import {PortisWallet} from "../lib/portis";
-import {MetamaskWallet, StateChannelsPayment} from "payment-statechannel";
-
 import { BrowserRouter as Router } from "react-router-dom";
+import React from "react";
+import ReactDOM from "react-dom";
+import { Provider } from "react-redux";
+import store from "./redux/store";
+
+import App from "./App"; 
+import statechannelsActions from "./redux/actions/statechanenls";
+import * as clientActions from "./redux/actions/client";
 
 const debug = require('debug');
 debug.enable();
 debug.log = console.info.bind(console);
 
-//--------------------------------------------------
-// webtorrent and payment logic
-
-const wallet = new MetamaskWallet();
-//const wallet = new PortisWallet(process.env.DAPP_ADDRESS, process.env.DAPP_NETWORK);
-global.wallet = wallet;
-
-(typeof global === 'undefined' ? window : global).WEBTORRENT_ANNOUNCE = null;
-const client = new WebTorrent({peerId: process.env.CLIENT_PEER_ID});
-global.client = client;
-
-const payment = new StateChannelsPayment(wallet);
-global.payment = payment;
-
-const leecher = new Leecher(client, payment);
-global.leecher = leecher;
-
-wallet.open();
-wallet.on('login', async(address) => {
-  console.log('run leecher for', {address});
-});
-
-//--------------------------------------------------
-// UI event dispatch
-import store from "./redux/store";
-import statechannelsActions from "./redux/actions/statechanenls";
+import client from '../lib/client';
+const { wallet, webtorrent, payment, leecher } = global.client = client;
 
 //for debug
 global.store = store;
+store.subscribe(async()=> {
+  //const state = store.getState();
+});
+
+wallet.on('login', async(address) => {
+  console.log('run leecher for', {address});
+  store.dispatch(clientActions.login(address));
+
+  const balance = await wallet.getSigner().getBalance();
+  store.dispatch(clientActions.setBalance(balance));
+});
+wallet.open();
+
+
+leecher.on('add', async(torrent)=> {
+  //TODO: add actions file for this?
+  await new Promise(resolv=>setTimeout(resolv, 2000));
+  store.dispatch({type: 'TORRENT', torrent});
+
+  torrent.once('ready', ()=> {
+    const file = (torrent.files && torrent.files[0]);
+    if (file) {
+      console.log('render video');
+      file.renderTo('video#MainVideoPlayer');
+    }
+  });
+
+  torrent.on('download', (bytes)=> 
+    store.dispatch({type: 'TORRENT', torrent})
+  );
+});
+
 
 payment.on('stateUpdated', (address, channelId, {state})=> {
   const allocationItems = state.outcome.reduce((ret, cur)=> {
@@ -71,10 +81,6 @@ payment.on('handshakeBack', (address, handshakeId, channelId)=>{
 
 
 //--------------------------------------------------
-import React from "react";
-import ReactDOM from "react-dom";
-import { Provider } from "react-redux";
-import App from "./App"; 
 
 ReactDOM.render(
   <Router>

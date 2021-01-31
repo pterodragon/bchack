@@ -2,7 +2,6 @@
   "name": "payment-statechannel",
   "version": "1.0.0",
   "main": "dist/index.js",
-  "license": "MIT",
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",

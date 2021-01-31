@@ -11,6 +11,7 @@ const log = createDebug('wxp.leecher');
 
 export interface Leecher {
   on(event:'sidetalk', listener: (peerId: string, paylaod:any)=>void): this;
+  on(event:'add', listener: (torrent: Torrent)=>void): this;
 };
 
 export class Leecher extends EventEmitter {
@@ -52,7 +53,7 @@ export class Leecher extends EventEmitter {
         log(`wire handshake with id=${wire.peerId}`);
         const payload = await payment.handshake(wire.peerId);
         await sidetalk.send({payload});
-      })
+      });
       sidetalk.on('message', (msg: {payload?: any})=> {
         if (msg.payload) {
           payment.received(msg.payload, wire);
@@ -73,6 +74,7 @@ export class Leecher extends EventEmitter {
 
     });
 
+    this.emit('add', torrent);
     return torrent; 
   }
 

@@ -3,10 +3,9 @@ import actions from "../redux/actions/statechanenls";
 import StateChannelsPanel from "../components/StateChannelsPannel.js"
 
 
-const mapStateToProps = (state, ownProps) => ({
-  // ... computed data from state and optionally ownProps
-  statechannels: state.statechannels
-});
+const mapStateToProps = (state) => {
+  return state.statechannels;
+};
 
 
 const mapDispatchToProps = {
