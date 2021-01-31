@@ -18,7 +18,7 @@ const wallet = new MetamaskWallet();
 global.wallet = wallet;
 
 (typeof global === 'undefined' ? window : global).WEBTORRENT_ANNOUNCE = null;
-const client = new WebTorrent({peerId: '2d5757303031322d724a32683939617936376c5b'});
+const client = new WebTorrent({peerId: process.env.CLIENT_PEER_ID});
 global.client = client;
 
 const payment = new StateChannelsPayment(wallet);

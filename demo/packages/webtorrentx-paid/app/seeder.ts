@@ -29,7 +29,7 @@ async function main() {
 
   const wallet = new LocalWallet(provider, process.env.WALLET1_PRIVATE_KEY);
 
-  const server = new WebTorrent({peerId: '2d5757303031322d724a32683939617936376c5c'});
+  const server = new WebTorrent({peerId: process.env.CLIENT_PEER_ID});
   const opts = {announce: []}  // disable default public trackers
 
   const balance = await wallet.getSigner().getBalance();
