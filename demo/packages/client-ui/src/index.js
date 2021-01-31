@@ -40,7 +40,7 @@ import statechannelsActions from "./redux/actions/statechanenls";
 //for debug
 global.store = store;
 
-function updateUIStateByPaymentState(channelId, state) {
+payment.on('stateUpdated', (address, channelId, {state})=> {
   const allocationItems = state.outcome.reduce((ret, cur)=> {
     for (const item of cur.allocationItems ) {
       //hex to dec
@@ -54,33 +54,19 @@ function updateUIStateByPaymentState(channelId, state) {
   if (state.isFinal) {
     store.dispatch(statechannelsActions.updateStatus(channelId, 'completed'));
   }
-}
+});
 
-
-const channelIdMap = new Map();
-payment.on('handshakeBack', (address, handshakeId, channelId, {peerId})=>{
-  channelIdMap.set(peerId, channelId);
-  const statechannel = payment.getChannel(address);
-  if (statechannel) {
-    statechannel.on('signed', ({state})=> 
-      updateUIStateByPaymentState(channelId, state)
-    );
-
-    const holdings = parseInt(statechannel.holdings.toString());
-    store.dispatch(statechannelsActions.updateDeposited(channelId, holdings));
-  }
-
+payment.on('handshakeBack', (address, handshakeId, channelId)=>{
   const channel = {
     channelStatus: "active",
     amountDeposited: 0,
     allocationItems: [],
   };
   store.dispatch(statechannelsActions.addChannel(channelId, channel));
-});
 
-leecher.on('sidetalk', (peerId, {signed}) => {
-  const channelId = channelIdMap.get(peerId);
-  signed && channelId && updateUIStateByPaymentState(channelId, signed.state)
+  const statechannel = payment.getChannel(address);
+  const holdings = parseInt(statechannel.holdings.toString());
+  store.dispatch(statechannelsActions.updateDeposited(channelId, holdings));
 });
 
 

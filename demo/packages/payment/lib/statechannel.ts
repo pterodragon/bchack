@@ -11,11 +11,8 @@ import {
 import createDebug from 'debug';
 const log = createDebug('py.statechannel');
 
-export interface StateChannel {
-  on(event: 'signed', listener: (signed: SignedState)=>void): this;
-}
 
-export class StateChannel extends EventEmitter {
+export class StateChannel {
   private readonly nitroAdjudicator: ethers.Contract;
   private readonly ethAssetHolder: ethers.Contract;
   private _holdings = BigNumber.from(0);
@@ -35,7 +32,7 @@ export class StateChannel extends EventEmitter {
 
     const myaddress = await wallet.getAddress();
     const state = createState(channel, 1);
-    const signed = await instance.signAndEmit(state);
+    const signed = await instance.signState(state);
     instance.update( myaddress,  signed);
     return instance;
   }
@@ -64,7 +61,6 @@ export class StateChannel extends EventEmitter {
   }
 
   private constructor( private readonly wallet: Wallet) { 
-    super();
 
     this.nitroAdjudicator = new ethers.Contract(
       nitro.NITRO_ADJUDICATOR_ADDRESS,
@@ -114,7 +110,7 @@ export class StateChannel extends EventEmitter {
     const state = nitro.add(this.latestState, await this.address, value);
     state.turnNum += 1;
 
-    const signed = await this.signAndEmit(state);
+    const signed = await this.signState(state);
     return this.update(await this.address, signed);
   }
 
@@ -124,7 +120,7 @@ export class StateChannel extends EventEmitter {
     state = nitro.add(state, to, value);
     state.turnNum += 1;
 
-    return await this.signAndEmit(state);
+    return await this.signState(state);
   }
 
   isConcludable(): boolean {
@@ -140,7 +136,7 @@ export class StateChannel extends EventEmitter {
     const { latestState: state } = this;
     state.isFinal = true;
 
-    return await this.signAndEmit(state);
+    return await this.signState(state);
   }
 
   async conclude() {
@@ -161,11 +157,10 @@ export class StateChannel extends EventEmitter {
     return this._holdings;
   }
 
-  async signAndEmit(state: State): Promise<SignedState> {
+  async signState(state: State): Promise<SignedState> {
     const signer = this.wallet.getSigner();
     const signature = await sign(signer, state);
     const signed = {state, signature}
-    this.emit('signed', signed);
     return signed;
   }
 }

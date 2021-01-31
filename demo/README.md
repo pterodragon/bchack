@@ -1,8 +1,8 @@
 ## Installation
 ```bash
 npm run clean
-npm boostrap
 npm install
+npm boostrap
 npm run build
 ```
 

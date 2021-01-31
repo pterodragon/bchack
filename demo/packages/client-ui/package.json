@@ -7,8 +7,8 @@
     "react-start": "parcel -p 3000 index.html --out-dir build",
     "react-build": "parcel build index.html --out-dir build --public-url ./",
     "clean-build": "rm -rf build/ .cache dist/",
-    "build": "yarn clean-build && yarn react-build",
-    "start": "yarn react-start",
+    "build": "npm run clean-build && npm run react-build",
+    "start": "npm run react-start",
     "clean": "rm -rf build/ .cache dist/"
   },
   "dependencies": {

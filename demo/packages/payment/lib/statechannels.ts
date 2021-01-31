@@ -14,6 +14,13 @@ declare type Payload = {
   signed?: SignedState;
   event: any;
 };
+
+/*
+export interface StateChannelsPayment extends PaymentInterface<Payload> {
+  on(event: 'stateUpdated', listener: (address: string, channelId: string, signed: SignedState)=>void): this;
+};
+*/
+
 /**
  * only support two participants and single directional transfer for now
  */
@@ -44,6 +51,7 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
       const statechannel = await StateChannel.createFromScratch(this._wallet, this._chainId, [myaddress, address]);
       this._channels.set(address, statechannel);
       const signed = statechannel.getSignedState(myaddress);
+      this.emit('stateUpdated', address, statechannel.channelId, signed);
 
       const { channelId } = statechannel;
       const event = expected ? { handshakeId, channelId, expected:expected.toHexString() } : { handshakeId, channelId };
@@ -65,26 +73,26 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
 
   async received({from, type, signed, event} : Payload,  meta?: any) {
     const myaddress = await this.address;
-    switch(type) {
-      case 'handshake': {
+    if (type === 'handshake') {
         if (signed) { //from a handshake back
           const statechannel = StateChannel.createFromState(this._wallet, event.channelId, from, signed);
           this._channels.set(from, statechannel);
+          this.emit('stateUpdated', from, statechannel.channelId, signed);
           return this.emit("handshakeBack", from, event.handshakeId, event.channelId, event.expected && BigNumber.from(event.expected), meta);
         }
         return this.emit("handshake", from, event.handshakeId, meta);
-      }
+    }
 
+    const statechannel = this.getChannel(from);
+    statechannel.update(from, signed);
+    this.emit('stateUpdated', from, statechannel.channelId, signed);
+
+    switch(type) {
       case 'deposit': {
-        const statechannel = this.getChannel(from);
-        statechannel.update(from, signed);
         return this.emit("deposited", from, BigNumber.from(event.amount), meta);
       }
 
       case 'request': {
-        const statechannel = this.getChannel(from);
-        statechannel.update(from, signed);
-
         //assert(myaddress === destination, `address not match: ${myaddress} !== ${allocationAddress}`);
         const respond = async() => ({
           from: myaddress,
@@ -99,14 +107,10 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
       }
 
       case 'transfer': {
-        const statechannel = this.getChannel(from);
-        statechannel.update(from, signed);
         return this.emit("received", from, BigNumber.from(event.amount), event.requestId, meta);
       }
 
       case 'finalize': {
-        const statechannel = this.getChannel(from);
-        statechannel.update(from, signed);
         if (!statechannel.getSignedState(myaddress).state.isFinal) {
           const signed = await statechannel.finalize();
           statechannel.update(myaddress, signed);
@@ -157,11 +161,12 @@ export class StateChannelsPayment extends EventEmitter implements PaymentInterfa
   
 
   //public for unit testing
-  getChannel(address: string) {
+  getChannel(address: string): StateChannel {
     const channel = this._channels.get(address);
     if (!channel) throw new Error(`channel of address ${address} not found`);
     return channel;
   }
+
 
 }  //end class StateChannelManager
 
